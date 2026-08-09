@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LuminaGrid — Sign In</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="auth-shell">
+
+  <div class="auth-side">
+    <div>
+      <div class="brand">
+        <span class="dot"></span>
+        LuminaGrid
+      </div>
+      <h1 style="margin-top:48px;">Every streetlight in Barangay&nbsp;Guadalupe, on one map.</h1>
+      <p class="tagline">
+        Real-time fault detection over the GSM network — no broadband required.
+        Built for barangay officials, maintenance electricians, and budget officers
+        managing public lighting in Cebu City.
+      </p>
+    </div>
+
+    <div class="metric-row">
+      <div class="metric">
+        <strong>4</strong>
+        <span>Monitoring nodes</span>
+      </div>
+      <div class="metric">
+        <strong>&lt;10s</strong>
+        <span>GSM alert latency target</span>
+      </div>
+      <div class="metric">
+        <strong>95%+</strong>
+        <span>Fault detection accuracy target</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="auth-form-wrap">
+    <div class="card">
+      <h2>Welcome back</h2>
+      <p class="sub">Sign in to your LuminaGrid account</p>
+
+      <div class="error-box" id="loginError"></div>
+
+      <form id="loginForm">
+        <div class="field">
+          <label for="loginEmail">Username or municipal email</label>
+          <input type="text" id="loginEmail" placeholder="e.g. juan.delacruz@cebucity.gov.ph" required>
+        </div>
+        <div class="field">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" placeholder="••••••••" required>
+        </div>
+        <button type="submit" class="btn" id="loginBtn">Sign In</button>
+      </form>
+
+      <p class="form-footer" style="text-align:left; font-size:0.78rem;">
+        Testing with mock data? Try <code>juan.delacruz@cebucity.gov.ph</code> (Admin),
+        <code>mario.reyes@cebucity.gov.ph</code> (Electrician), or
+        <code>liza.santos@cebucity.gov.ph</code> (Finance) — any password works until
+        Firebase Auth is wired in.
+      </p>
+
+      <p class="form-footer">
+        Accounts are provisioned by your Barangay Administrator. Need access?
+        Contact your LGU admin office.
+      </p>
+      <p class="form-footer" style="margin-top:6px;">
+        <a href="super-admin.html">Super Admin sign in →</a>
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<!-- Firebase SDKs aren't loaded yet — everything currently runs on
+     mock data through data-service.js. Add the three compat <script>
+     tags back (see README) once a real Firebase project is ready. -->
+<script src="js/firebase-config.js"></script>
+<script src="js/data-service.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/auth.js"></script>
+</body>
+</html>

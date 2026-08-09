@@ -1,0 +1,80 @@
+{
+  "users": {
+    "u001": {
+      "user_id": "u001",
+      "email": "juan.delacruz@cebucity.gov.ph",
+      "first_name": "Juan",
+      "last_name": "Dela Cruz",
+      "role": "admin",
+      "contact_number": "0917-000-1001",
+      "created_at": "2026-01-15T08:00:00"
+    },
+    "u002": {
+      "user_id": "u002",
+      "email": "mario.reyes@cebucity.gov.ph",
+      "first_name": "Mario",
+      "last_name": "Reyes",
+      "role": "electrician",
+      "contact_number": "0917-000-1002",
+      "created_at": "2026-01-16T08:00:00"
+    },
+    "u003": {
+      "user_id": "u003",
+      "email": "liza.santos@cebucity.gov.ph",
+      "first_name": "Liza",
+      "last_name": "Santos",
+      "role": "finance",
+      "contact_number": "0917-000-1003",
+      "created_at": "2026-01-16T09:00:00"
+    }
+  },
+
+  "streetlights": {
+    "1": { "streetlight_id": "1", "pole_number": "GDLP-N01", "barangay": "Guadalupe", "latitude": 10.30712, "longitude": 123.88914, "installation_date": "2026-06-01", "status": "Active" },
+    "2": { "streetlight_id": "2", "pole_number": "GDLP-N02", "barangay": "Guadalupe", "latitude": 10.30756, "longitude": 123.88940, "installation_date": "2026-06-01", "status": "Active" },
+    "3": { "streetlight_id": "3", "pole_number": "GDLP-N03", "barangay": "Guadalupe", "latitude": 10.30801, "longitude": 123.88967, "installation_date": "2026-06-01", "status": "Faulty" },
+    "4": { "streetlight_id": "4", "pole_number": "GDLP-N04", "barangay": "Guadalupe", "latitude": 10.30845, "longitude": 123.88993, "installation_date": "2026-06-01", "status": "Offline" }
+  },
+
+  "sensor_readings": {
+    "1": {
+      "r101": { "reading_id": "r101", "streetlight_id": "1", "current": 0.42, "voltage": 220.1, "ambient_light": 12.0, "power_consumption": 92.4, "light_status": "ON", "timestamp": "2026-08-09T19:00:00" }
+    },
+    "2": {
+      "r102": { "reading_id": "r102", "streetlight_id": "2", "current": 0.41, "voltage": 219.8, "ambient_light": 11.5, "power_consumption": 90.1, "light_status": "ON", "timestamp": "2026-08-09T19:00:00" }
+    },
+    "3": {
+      "r103": { "reading_id": "r103", "streetlight_id": "3", "current": 0.00, "voltage": 219.5, "ambient_light": 10.8, "power_consumption": 0.0, "light_status": "ON", "timestamp": "2026-08-09T19:00:00" }
+    },
+    "4": {
+      "r104": { "reading_id": "r104", "streetlight_id": "4", "current": 0.00, "voltage": 0.0, "ambient_light": 0.0, "power_consumption": 0.0, "light_status": "OFF", "timestamp": "2026-08-09T18:30:00" }
+    }
+  },
+
+  "fault_reports": {
+    "f501": {
+      "fault_id": "f501",
+      "streetlight_id": "3",
+      "reading_id": "r103",
+      "fault_type": "Lamp Burnout",
+      "description": "Zero current draw detected while light is expected ON (nighttime, LDR confirms dark).",
+      "severity": "High",
+      "status": "Pending",
+      "detected_at": "2026-08-09T19:00:05",
+      "resolved_at": null
+    }
+  },
+
+  "maintenance_records": {},
+
+  "notifications": {
+    "n901": {
+      "notification_id": "n901",
+      "fault_id": "f501",
+      "user_id": "u002",
+      "notification_type": "Fault Alert",
+      "status": "Unread",
+      "sent_at": "2026-08-09T19:00:06"
+    }
+  }
+}

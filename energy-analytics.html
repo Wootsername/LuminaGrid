@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LuminaGrid — Energy Analytics</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <div class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      LuminaGrid
+      <small>Guadalupe, Cebu City</small>
+    </div>
+    <div class="nav-links" id="navLinks">
+      <a href="dashboard.html">Map</a>
+      <a href="energy-analytics.html" class="active" data-roles="admin,finance">Energy Analytics</a>
+      <a href="node-management.html" data-roles="admin">Node Management</a>
+      <a href="user-management.html" data-roles="admin">Users</a>
+      <a href="fault-records.html" data-roles="admin">Fault Records</a>
+      <a href="system-logs.html" data-roles="admin">System Logs</a>
+    </div>
+    <div class="user-chip">
+      <span id="userName">—</span>
+      <span class="role-badge" id="userRole">—</span>
+      <a href="#" id="logoutLink" class="btn-secondary" style="padding:6px 12px;border-radius:8px;">Sign Out</a>
+    </div>
+  </div>
+
+  <div class="analytics-wrap">
+
+    <div class="analytics-toolbar">
+      <div>
+        <h2 style="margin:0;">Grid Energy Consumption</h2>
+        <p style="margin:4px 0 0 0; color:var(--slate-400); font-size:0.85rem;">
+          Power usage across all monitoring nodes — supports the Budget/Finance Officer's
+          use case of reviewing energy-consumption data for maintenance-budget planning.
+        </p>
+      </div>
+      <div style="display:flex; gap:10px; align-items:center;">
+        <select id="timeframeSelect">
+          <option value="daily">Today (hourly)</option>
+          <option value="weekly">Last 7 days</option>
+        </select>
+        <button class="btn" id="exportBtn" style="width:auto; padding:8px 16px;">Export CSV</button>
+      </div>
+    </div>
+
+    <div class="chart-panel">
+      <canvas id="energyChart" height="90"></canvas>
+    </div>
+
+    <div class="chart-panel">
+      <h3 style="margin-top:0;">Per-Node Breakdown</h3>
+      <canvas id="nodeChart" height="90"></canvas>
+    </div>
+
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/data-service.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/energy-analytics.js"></script>
+</body>
+</html>

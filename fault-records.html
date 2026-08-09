@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LuminaGrid — Fault Records</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="app-shell">
+
+  <div class="topbar">
+    <div class="brand"><span class="dot"></span>LuminaGrid<small>Guadalupe, Cebu City</small></div>
+    <div class="nav-links" id="navLinks">
+      <a href="dashboard.html">Map</a>
+      <a href="energy-analytics.html" data-roles="admin,finance">Energy Analytics</a>
+      <a href="node-management.html" data-roles="admin">Node Management</a>
+      <a href="user-management.html" data-roles="admin">Users</a>
+      <a href="fault-records.html" class="active" data-roles="admin">Fault Records</a>
+      <a href="system-logs.html" data-roles="admin">System Logs</a>
+    </div>
+    <div class="user-chip">
+      <span id="userName">—</span>
+      <span class="role-badge" id="userRole">—</span>
+      <a href="#" id="logoutLink" class="btn-secondary" style="padding:6px 12px;border-radius:8px;">Sign Out</a>
+    </div>
+  </div>
+
+  <div class="analytics-wrap">
+    <div class="analytics-toolbar">
+      <div>
+        <h2 style="margin:0;">Fault Records</h2>
+        <p style="margin:4px 0 0 0; color:var(--slate-400); font-size:0.85rem;">
+          Full history of detected faults. Use Case: "Review & Resolve Fault Records."
+        </p>
+      </div>
+      <select id="statusFilter">
+        <option value="">All statuses</option>
+        <option value="Pending">Pending</option>
+        <option value="Resolved">Resolved</option>
+      </select>
+    </div>
+
+    <div class="chart-panel">
+      <table class="data-table">
+        <thead>
+          <tr><th>Pole</th><th>Fault Type</th><th>Severity</th><th>Status</th><th>Detected</th><th>Resolved</th><th></th></tr>
+        </thead>
+        <tbody id="faultTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/firebase-config.js"></script>
+<script src="js/data-service.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/fault-records.js"></script>
+</body>
+</html>

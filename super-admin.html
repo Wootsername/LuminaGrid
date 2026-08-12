@@ -1,78 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LuminaGrid — Super Admin</title>
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LuminaGrid — Super Admin Panel</title>
+  <meta name="description"
+    content="LuminaGrid Super Admin Control Panel — System provisioner for developer operations and Barangay Administrator setup">
+  <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
 
-<div class="app-shell">
+  <div class="app-shell">
 
-  <div class="topbar">
-    <div class="brand"><span class="dot"></span>LuminaGrid<small>Super Admin Panel — Development Team</small></div>
-    <div class="user-chip">
-      <a href="index.html">← Back to LGU Sign In</a>
-    </div>
-  </div>
-
-  <!-- Gate: Super Admin login -->
-  <div id="gateWrap" style="display:flex; align-items:center; justify-content:center; min-height:70vh;">
-    <div class="card">
-      <h2>Super Admin Sign In</h2>
-      <p class="sub">Development team access only — not a barangay/LGU role.</p>
-      <div class="error-box" id="gateError"></div>
-      <form id="gateForm">
-        <div class="field"><label>Dev passphrase</label><input type="password" id="gatePass" required></div>
-        <button type="submit" class="btn">Enter Panel</button>
-      </form>
-      <p class="form-footer" style="font-size:0.76rem;">
-        Prototype note: any non-empty passphrase works until this is wired to a real
-        restricted-access mechanism (e.g. a separate Firebase custom-claim check).
-      </p>
-    </div>
-  </div>
-
-  <!-- Panel: shown after gate passes -->
-  <div id="panelWrap" style="display:none;" class="analytics-wrap">
-
-    <div class="chart-panel">
-      <h3 style="margin-top:0;">Create Barangay / LGU Administrator Account</h3>
-      <p style="color:var(--slate-400); font-size:0.85rem;">
-        Use Case: "Create Barangay/LGU Administrator Account." This is the only account
-        type the Super Admin creates directly — Electrician and Finance Officer accounts
-        are provisioned by that Administrator afterward, in User Management.
-      </p>
-      <form id="createAdminForm" style="max-width:420px;">
-        <div class="field"><label>First name</label><input type="text" id="saFirstName" required></div>
-        <div class="field"><label>Last name</label><input type="text" id="saLastName" required></div>
-        <div class="field"><label>Email</label><input type="email" id="saEmail" required></div>
-        <div class="field"><label>Contact number</label><input type="text" id="saContact" placeholder="0917-000-0000"></div>
-        <button type="submit" class="btn" style="width:auto; padding:8px 16px;">Create Administrator Account</button>
-      </form>
-      <div id="createAdminResult" style="margin-top:12px; font-size:0.85rem; color:var(--signal-green);"></div>
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="brand">
+        <span class="dot"></span>
+        LuminaGrid <small style="margin-left:8px; display:inline;">Super Admin Panel</small>
+      </div>
+      <div class="user-chip">
+        <a href="index.html" class="logout-btn">← Back to LGU Sign In</a>
+      </div>
     </div>
 
-    <div class="chart-panel">
-      <h3 style="margin-top:0;">Other Super Admin Functions</h3>
-      <p style="color:var(--slate-400); font-size:0.85rem; margin-bottom:16px;">
-        Per the Use Case Diagram, the Super Admin also configures initial system setup,
-        database/backend settings, deploys firmware to monitoring nodes, monitors overall
-        system health, and can access all modules for QA/testing. These are development-team
-        operational tasks (Firebase console, ESP32 firmware flashing, etc.) rather than
-        barangay-facing dashboard features, so they're intentionally left out of this web UI —
-        flag it if you want any of these built out as an actual page.
-      </p>
+    <div id="gateWrap" class="flex-center" style="min-height:75vh;">
+      <div class="card" style="max-width:380px;">
+        <h2>Super Admin Sign In</h2>
+        <p class="sub">Development & System Provisioning Access</p>
+        <div class="error-box" id="gateError"></div>
+        <form id="gateForm">
+          <div class="field">
+            <label>Dev Passphrase</label>
+            <input type="password" id="gatePass" required placeholder="Enter developer passphrase" class="no-icon">
+          </div>
+          <button type="submit" class="btn btn-amber">Enter Panel</button>
+        </form>
+        <p class="form-footer" style="font-size:0.75rem;">
+          Any passphrase works in mock/prototype mode.
+        </p>
+      </div>
+    </div>
+
+    <div id="panelWrap" style="display:none;" class="page-wrap">
+      <div class="card" style="max-width:540px; margin:20px auto;">
+        <h3>Create Barangay / LGU Administrator Account</h3>
+        <p style="color:var(--gray-500); font-size:0.82rem; margin-bottom:20px;">
+          Use Case: <strong>Create Barangay/LGU Administrator Account</strong>. The Super Admin provisions the top-level
+          Administrator account for Barangay Guadalupe.
+        </p>
+        <form id="createAdminForm">
+          <div class="field"><label>First Name</label><input type="text" id="saFirstName" required class="no-icon">
+          </div>
+          <div class="field"><label>Last Name</label><input type="text" id="saLastName" required class="no-icon"></div>
+          <div class="field"><label>Municipal Email</label><input type="email" id="saEmail" required class="no-icon">
+          </div>
+          <div class="field"><label>Contact Number</label><input type="text" id="saContact" placeholder="0917-000-0000"
+              class="no-icon"></div>
+          <button type="submit" class="btn btn-amber" style="margin-top:12px;">Create Administrator Account</button>
+        </form>
+        <div id="createAdminResult" style="margin-top:14px; font-size:0.85rem; font-weight:600; color:var(--green);">
+        </div>
+      </div>
     </div>
 
   </div>
 
-</div>
-
-<script src="js/firebase-config.js"></script>
-<script src="js/data-service.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/super-admin.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/data-service.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/super-admin.js"></script>
 </body>
+
 </html>

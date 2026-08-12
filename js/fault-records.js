@@ -1,49 +1,50 @@
 // ============================================================
-// LuminaGrid — Fault Records (Admin only)
-// Use Case: "Review & Resolve Fault Records"
+// LuminaGrid — Fault Records
 // ============================================================
 
-requireRole(["admin"]);
+const currentRole = requireRole(["admin", "electrician"]);
 paintUserChip();
 wireLogout();
 
-async function renderFaults(statusFilter) {
-  const [reports, streetlights] = await Promise.all([
-    DataService.getFaultReports(statusFilter ? { status: statusFilter } : {}),
-    DataService.getStreetlights()
-  ]);
-  const poleById = Object.fromEntries(streetlights.map((s) => [s.streetlight_id, s.pole_number]));
+async function renderFaultTable() {
+  const statusFilter = document.getElementById("statusFilter").value;
+  const reports = await DataService.getFaultReports({ status: statusFilter });
+  const streetlights = await DataService.getStreetlights();
+  const nodeById = Object.fromEntries(streetlights.map(s => [s.streetlight_id, s]));
 
-  const body = document.getElementById("faultTableBody");
+  const tbody = document.getElementById("faultTableBody");
   if (reports.length === 0) {
-    body.innerHTML = `<tr><td colspan="7" style="color:var(--slate-400); text-align:center; padding:24px;">No fault records match this filter.</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No fault records found.</td></tr>`;
     return;
   }
 
-  body.innerHTML = reports
-    .map(
-      (r) => `
+  tbody.innerHTML = reports.map(r => {
+    const node = nodeById[r.streetlight_id] || {};
+    const nodeLabel = node.node_id ? `${node.node_id} (${node.pole_number})` : (node.pole_number || r.streetlight_id);
+
+    return `
       <tr>
-        <td>${poleById[r.streetlight_id] || r.streetlight_id}</td>
+        <td><strong>${r.fault_id}</strong></td>
+        <td>${nodeLabel}</td>
         <td>${r.fault_type}</td>
-        <td>${r.severity}</td>
-        <td><span class="status-pill ${r.status === "Resolved" ? "active" : "faulty"}">${r.status}</span></td>
+        <td><span style="font-weight:600; color:${r.severity === 'High' ? 'var(--red)' : r.severity === 'Medium' ? 'var(--amber-dark)' : 'var(--gray-500)'}">${r.severity}</span></td>
+        <td><span class="status-pill ${r.status === 'Resolved' ? 'resolved' : 'pending'}">${r.status}</span></td>
         <td>${formatDateTime(r.detected_at)}</td>
-        <td>${r.resolved_at ? formatDateTime(r.resolved_at) : "—"}</td>
-        <td>${r.status === "Pending" ? `<button class="link-btn" onclick="resolve('${r.fault_id}')">Mark Resolved</button>` : ""}</td>
-      </tr>`
-    )
-    .join("");
+        <td>${formatDateTime(r.resolved_at)}</td>
+        <td>
+          ${r.status === 'Pending' ? `<button class="link-btn" onclick="resolveFaultRecord('${r.fault_id}')">Resolve</button>` : '—'}
+        </td>
+      </tr>
+    `;
+  }).join("");
 }
 
-async function resolve(faultId) {
+async function resolveFaultRecord(faultId) {
   await DataService.resolveFaultReport(faultId);
-  renderFaults(document.getElementById("statusFilter").value);
+  renderFaultTable();
 }
-window.resolve = resolve;
+window.resolveFaultRecord = resolveFaultRecord;
 
-document.getElementById("statusFilter").addEventListener("change", (e) => {
-  renderFaults(e.target.value);
-});
+document.getElementById("statusFilter").addEventListener("change", renderFaultTable);
 
-renderFaults("");
+renderFaultTable();

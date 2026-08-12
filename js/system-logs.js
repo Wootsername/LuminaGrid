@@ -1,8 +1,5 @@
 // ============================================================
-// LuminaGrid — System Logs (Admin only)
-// Use Case: "View System Logs"
-// Merges fault detections, notifications, and maintenance
-// actions into a single chronological audit feed.
+// LuminaGrid — System Logs
 // ============================================================
 
 requireRole(["admin"]);
@@ -10,64 +7,59 @@ paintUserChip();
 wireLogout();
 
 async function renderLogs() {
-  const [faults, notifications, maintenance, streetlights, users] = await Promise.all([
-    DataService.getFaultReports(),
-    DataService.getNotifications(),
-    DataService.getMaintenanceRecords(),
-    DataService.getStreetlights(),
-    DataService.getUsers()
-  ]);
+  const reports = await DataService.getFaultReports();
+  const notifications = await DataService.getNotifications();
+  const maintenance = await DataService.getMaintenanceRecords();
 
-  const poleById = Object.fromEntries(streetlights.map((s) => [s.streetlight_id, s.pole_number]));
-  const faultById = Object.fromEntries(faults.map((f) => [f.fault_id, f]));
-  const userById = Object.fromEntries(users.map((u) => [u.user_id, `${u.first_name} ${u.last_name}`]));
+  const logs = [];
 
-  const events = [];
-
-  faults.forEach((f) => {
-    events.push({
-      time: f.detected_at,
-      event: "Fault Detected",
-      detail: `${f.fault_type} on Pole ${poleById[f.streetlight_id] || f.streetlight_id} (${f.severity})`
+  reports.forEach(r => {
+    logs.push({
+      time: r.detected_at,
+      type: "Fault Detected",
+      detail: `[${r.fault_type}] ${r.description} (Severity: ${r.severity})`
     });
-    if (f.resolved_at) {
-      events.push({
-        time: f.resolved_at,
-        event: "Fault Resolved",
-        detail: `Pole ${poleById[f.streetlight_id] || f.streetlight_id}`
+    if (r.resolved_at) {
+      logs.push({
+        time: r.resolved_at,
+        type: "Fault Resolved",
+        detail: `Fault ${r.fault_id} marked as resolved.`
       });
     }
   });
 
-  notifications.forEach((n) => {
-    const fault = faultById[n.fault_id];
-    events.push({
+  notifications.forEach(n => {
+    logs.push({
       time: n.sent_at,
-      event: "Notification Sent",
-      detail: `${n.notification_type} → ${userById[n.user_id] || n.user_id}${fault ? " (Pole " + (poleById[fault.streetlight_id] || fault.streetlight_id) + ")" : ""}`
+      type: "GSM Alert Dispatch",
+      detail: n.message || "Notification sent."
     });
   });
 
-  maintenance.forEach((m) => {
-    const fault = faultById[m.fault_id];
-    events.push({
+  maintenance.forEach(m => {
+    logs.push({
       time: m.repair_date,
-      event: "Maintenance Logged",
-      detail: `${m.repair_status} by ${userById[m.user_id] || m.user_id}${fault ? " — " + m.remarks : ""}`
+      type: "Maintenance Activity",
+      detail: `Repair status: ${m.repair_status}. Remarks: ${m.remarks}`
     });
   });
 
-  events.sort((a, b) => new Date(b.time) - new Date(a.time));
+  // Sort descending by timestamp
+  logs.sort((a, b) => new Date(b.time) - new Date(a.time));
 
-  const body = document.getElementById("logTableBody");
-  if (events.length === 0) {
-    body.innerHTML = `<tr><td colspan="3" style="color:var(--slate-400); text-align:center; padding:24px;">No system activity yet.</td></tr>`;
+  const tbody = document.getElementById("logTableBody");
+  if (logs.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="3" class="empty-state">No system log entries found.</td></tr>`;
     return;
   }
 
-  body.innerHTML = events
-    .map((e) => `<tr><td>${formatDateTime(e.time)}</td><td>${e.event}</td><td>${e.detail}</td></tr>`)
-    .join("");
+  tbody.innerHTML = logs.map(l => `
+    <tr>
+      <td style="font-family:var(--font-mono); font-size:0.8rem; color:var(--gray-500);">${formatDateTime(l.time)}</td>
+      <td><span class="role-badge" style="background:var(--gray-200); color:var(--navy-900);">${l.type}</span></td>
+      <td>${l.detail}</td>
+    </tr>
+  `).join("");
 }
 
 renderLogs();

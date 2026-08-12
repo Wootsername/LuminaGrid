@@ -12,6 +12,17 @@
 // and super-admin.html.
 // ============================================================
 
+// Password visibility toggle
+const toggleBtn = document.getElementById("togglePassword");
+if (toggleBtn) {
+  toggleBtn.addEventListener("click", () => {
+    const pwInput = document.getElementById("loginPassword");
+    const isHidden = pwInput.type === "password";
+    pwInput.type = isHidden ? "text" : "password";
+    toggleBtn.textContent = isHidden ? "🙈" : "👁";
+  });
+}
+
 const loginForm = document.getElementById("loginForm");
 if (loginForm) {
   loginForm.addEventListener("submit", async (e) => {
@@ -45,7 +56,7 @@ if (loginForm) {
       errorBox.textContent = "No account found with those credentials.";
       errorBox.style.display = "block";
       btn.disabled = false;
-      btn.textContent = "Sign In";
+      btn.textContent = "Log-In";
     }
   });
 }

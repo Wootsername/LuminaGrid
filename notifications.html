@@ -4,9 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>LuminaGrid — System Logs & Analytics</title>
+  <title>LuminaGrid — Notifications & Alerts</title>
   <meta name="description"
-    content="LuminaGrid System Logs — Chronological event trail and system analytics for monitoring nodes and telemetry">
+    content="LuminaGrid Notifications & Alerts — Real-time fault notifications and GSM SMS alerts log">
   <link rel="stylesheet" href="css/style.css">
 </head>
 
@@ -23,11 +23,11 @@
       <div class="nav-links" id="navLinks">
         <a href="fault-records.html" data-roles="admin,electrician"><span class="nav-icon">📋</span> History</a>
         <a href="energy-analytics.html" data-roles="admin,finance"><span class="nav-icon">📊</span> Report</a>
-        <a href="notifications.html" data-roles="admin,electrician,finance"><span class="nav-icon">🔔</span>
-          Notification</a>
+        <a href="notifications.html" class="active" data-roles="admin,electrician,finance"><span
+            class="nav-icon">🔔</span> Notification</a>
         <a href="energy-analytics.html" data-roles="admin,finance"><span class="nav-icon">⚡</span> Energy</a>
         <a href="dashboard.html"><span class="nav-icon">📍</span> Dashboard</a>
-        <a href="node-management.html" class="active" data-roles="admin"><span class="nav-icon">⚙️</span> Admin</a>
+        <a href="node-management.html" data-roles="admin"><span class="nav-icon">⚙️</span> Admin</a>
       </div>
       <div class="user-chip">
         <span id="userName">—</span>
@@ -37,30 +37,26 @@
     </div>
 
     <div class="page-wrap">
+
       <div class="page-header">
         <div>
-          <h2>System Logs & Audit Analytics</h2>
-          <p class="subtitle">Real-time event logs of node heartbeats, fault detections, and system operations.</p>
+          <h2>Notifications & GSM Alerts</h2>
+          <p class="subtitle">Real-time alert dispatch log for Barangay Guadalupe control center & automated SMS
+            notifications.</p>
         </div>
       </div>
 
-      <!-- Logs Table Card -->
+      <!-- Notifications Card -->
       <div class="card">
-        <table class="data-table">
-          <thead>
-            <tr>
-              <th>Timestamp</th>
-              <th>Event Type</th>
-              <th>Details & Message</th>
-            </tr>
-          </thead>
-          <tbody id="logTableBody">
-            <tr>
-              <td colspan="3" class="empty-state">Loading system logs...</td>
-            </tr>
-          </tbody>
-        </table>
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+          <h3>Alert Feed</h3>
+          <span style="font-size:0.8rem; color:var(--gray-400);" id="unreadBannerText">0 unread notifications</span>
+        </div>
+        <div id="notificationsList">
+          <div class="empty-state">Loading notifications...</div>
+        </div>
       </div>
+
     </div>
 
   </div>
@@ -68,7 +64,7 @@
   <script src="js/firebase-config.js"></script>
   <script src="js/data-service.js"></script>
   <script src="js/utils.js"></script>
-  <script src="js/system-logs.js"></script>
+  <script src="js/notifications.js"></script>
 </body>
 
 </html>

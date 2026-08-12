@@ -1,72 +1,191 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LuminaGrid — Energy Analytics</title>
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LuminaGrid — Reports & Energy Analytics</title>
+  <meta name="description"
+    content="LuminaGrid Reports & Energy Analytics — Monthly consumption, fault summary, grid statistics and financial reporting">
+  <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
 
-<div class="app-shell">
+  <div class="app-shell">
 
-  <div class="topbar">
-    <div class="brand">
-      <span class="dot"></span>
-      LuminaGrid
-      <small>Guadalupe, Cebu City</small>
-    </div>
-    <div class="nav-links" id="navLinks">
-      <a href="dashboard.html">Map</a>
-      <a href="energy-analytics.html" class="active" data-roles="admin,finance">Energy Analytics</a>
-      <a href="node-management.html" data-roles="admin">Node Management</a>
-      <a href="user-management.html" data-roles="admin">Users</a>
-      <a href="fault-records.html" data-roles="admin">Fault Records</a>
-      <a href="system-logs.html" data-roles="admin">System Logs</a>
-    </div>
-    <div class="user-chip">
-      <span id="userName">—</span>
-      <span class="role-badge" id="userRole">—</span>
-      <a href="#" id="logoutLink" class="btn-secondary" style="padding:6px 12px;border-radius:8px;">Sign Out</a>
-    </div>
-  </div>
-
-  <div class="analytics-wrap">
-
-    <div class="analytics-toolbar">
-      <div>
-        <h2 style="margin:0;">Grid Energy Consumption</h2>
-        <p style="margin:4px 0 0 0; color:var(--slate-400); font-size:0.85rem;">
-          Power usage across all monitoring nodes — supports the Budget/Finance Officer's
-          use case of reviewing energy-consumption data for maintenance-budget planning.
-        </p>
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="brand">
+        <span class="dot"></span>
+        LuminaGrid
       </div>
-      <div style="display:flex; gap:10px; align-items:center;">
-        <select id="timeframeSelect">
-          <option value="daily">Today (hourly)</option>
-          <option value="weekly">Last 7 days</option>
-        </select>
-        <button class="btn" id="exportBtn" style="width:auto; padding:8px 16px;">Export CSV</button>
+      <div class="nav-links" id="navLinks">
+        <a href="fault-records.html" data-roles="admin,electrician"><span class="nav-icon">📋</span> History</a>
+        <a href="energy-analytics.html" class="active" data-roles="admin,finance"><span class="nav-icon">📊</span>
+          Report</a>
+        <a href="notifications.html" data-roles="admin,electrician,finance"><span class="nav-icon">🔔</span>
+          Notification</a>
+        <a href="energy-analytics.html" data-roles="admin,finance"><span class="nav-icon">⚡</span> Energy</a>
+        <a href="dashboard.html"><span class="nav-icon">📍</span> Dashboard</a>
+        <a href="node-management.html" data-roles="admin"><span class="nav-icon">⚙️</span> Admin</a>
+      </div>
+      <div class="user-chip">
+        <span id="userName">—</span>
+        <span class="role-badge" id="userRole">—</span>
+        <button class="logout-btn" id="logoutLink">🚪 logout</button>
       </div>
     </div>
 
-    <div class="chart-panel">
-      <canvas id="energyChart" height="90"></canvas>
-    </div>
+    <div class="page-wrap">
 
-    <div class="chart-panel">
-      <h3 style="margin-top:0;">Per-Node Breakdown</h3>
-      <canvas id="nodeChart" height="90"></canvas>
+      <!-- Page Header matching Figure 28 -->
+      <div class="page-header">
+        <div style="display:flex; align-items:center; gap:16px;">
+          <h2 style="font-size:1.5rem; font-weight:800; color:var(--navy-900); letter-spacing:0.5px;">REPORTS</h2>
+          <div style="position:relative; width:260px;">
+            <input type="text" placeholder="📅 Select date range..."
+              style="width:100%; padding:8px 12px; border-radius:20px; border:1px solid var(--gray-300); font-size:0.82rem; background:var(--white);">
+          </div>
+        </div>
+        <div style="display:flex; gap:10px; align-items:center;">
+          <select id="timeframeSelect"
+            style="padding:8px 16px; border-radius:20px; border:1px solid var(--gray-300); background:var(--white); font-weight:500; font-size:0.82rem;">
+            <option value="monthly">📅 Date</option>
+            <option value="daily">Daily View</option>
+            <option value="weekly">Weekly View</option>
+          </select>
+          <button class="btn btn-amber" id="exportBtn"
+            style="width:auto; padding:8px 20px; border-radius:20px; font-weight:600; gap:6px;">
+            📤 Export
+          </button>
+        </div>
+      </div>
+
+      <!-- 3-Column Grid matching Figure 28 -->
+      <div class="reports-grid">
+
+        <!-- Column 1: Bar Chart -->
+        <div class="report-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+          <div>
+            <h3
+              style="text-align:center; font-size:0.95rem; font-weight:700; color:var(--navy-900); margin-bottom:20px;">
+              MONTHLY COMPARISON<br>ENERGY CONSUMPTION
+            </h3>
+            <div style="position:relative; height:240px; width:100%;">
+              <canvas id="energyChart"></canvas>
+            </div>
+          </div>
+        </div>
+
+        <!-- Column 2: Fault Summary -->
+        <div class="report-card" style="display:flex; flex-direction:column;">
+          <h3 style="text-align:center; font-size:0.95rem; font-weight:700; color:var(--navy-900); margin-bottom:28px;">
+            FAULT SUMMARY
+          </h3>
+          <div style="display:flex; flex-direction:column; gap:16px; justify-content:center; flex:1;">
+            <div class="fault-summary-item total">
+              <div class="fault-summary-icon">🚨</div>
+              <span>Total Faults</span>
+              <span style="margin-left:auto; font-family:var(--font-mono); font-size:1.3rem;"
+                id="sumTotalFaults">25</span>
+            </div>
+
+            <div class="fault-summary-item resolved">
+              <div class="fault-summary-icon">⚙️</div>
+              <span>Resolved</span>
+              <span style="margin-left:auto; font-family:var(--font-mono); font-size:1.3rem;"
+                id="sumResolvedFaults">20</span>
+            </div>
+
+            <div class="fault-summary-item pending">
+              <div class="fault-summary-icon">💬</div>
+              <span>Pending</span>
+              <span style="margin-left:auto; font-family:var(--font-mono); font-size:1.3rem;"
+                id="sumPendingFaults">20</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Column 3: Stat Cards -->
+        <div style="display:flex; flex-direction:column; gap:14px; justify-content:space-between;">
+          <div class="report-card" style="padding:18px; display:flex; flex-direction:column; justify-content:center;">
+            <div
+              style="font-size:0.75rem; color:var(--gray-400); text-align:center; font-weight:500; margin-bottom:8px;">
+              Total Consumption</div>
+            <div style="display:flex; align-items:center; justify-content:center; gap:12px;">
+              <div class="energy-stat-icon" style="background:#FFF3E0; color:#F97316; width:44px; height:44px;">⚡</div>
+              <div>
+                <span style="font-family:var(--font-mono); font-size:1.6rem; font-weight:800; color:var(--navy-900);"
+                  id="statTotalKwh">163.3</span>
+                <span style="font-size:0.8rem; color:var(--gray-500); font-weight:500;">kWh</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="report-card" style="padding:18px; display:flex; flex-direction:column; justify-content:center;">
+            <div
+              style="font-size:0.75rem; color:var(--gray-400); text-align:center; font-weight:500; margin-bottom:8px;">
+              Monthly Cost</div>
+            <div style="display:flex; align-items:center; justify-content:center; gap:12px;">
+              <div class="energy-stat-icon"
+                style="background:#E8F5E9; color:#2E7D32; width:44px; height:44px; font-weight:700;">₱</div>
+              <div>
+                <span style="font-family:var(--font-mono); font-size:1.6rem; font-weight:800; color:var(--navy-900);"
+                  id="statMonthlyCost">2,219.00</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="report-card" style="padding:18px; display:flex; flex-direction:column; justify-content:center;">
+            <div
+              style="font-size:0.75rem; color:var(--gray-400); text-align:center; font-weight:500; margin-bottom:8px;">
+              Average/Node</div>
+            <div style="display:flex; align-items:center; justify-content:center; gap:12px;">
+              <div class="energy-stat-icon" style="background:#FFF8E1; color:#F5A623; width:44px; height:44px;">💡</div>
+              <div>
+                <span style="font-family:var(--font-mono); font-size:1.6rem; font-weight:800; color:var(--navy-900);"
+                  id="statAvgNode">41.1</span>
+                <span style="font-size:0.8rem; color:var(--gray-500); font-weight:500;">kWh</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Pagination bar matching Figure 28 -->
+      <div class="pagination-bar"
+        style="margin-top:12px; background:var(--white); padding:12px 20px; border-radius:var(--radius); box-shadow:var(--shadow-card);">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span>Rows per page</span>
+          <select style="border-radius:20px; padding:4px 12px; border:1px solid var(--gray-300);">
+            <option>10</option>
+            <option>25</option>
+            <option>50</option>
+          </select>
+          <span style="margin-left:8px;">of 50 rows</span>
+        </div>
+
+        <div class="pagination-pages" style="align-items:center; gap:8px;">
+          <span style="margin-right:12px;">Rows per page</span>
+          <button style="border:none; background:none; cursor:pointer;">‹</button>
+          <button class="active">1</button>
+          <button>2</button>
+          <button>3</button>
+          <button style="border:none; background:none; cursor:pointer;">›</button>
+        </div>
+      </div>
+
     </div>
 
   </div>
 
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-<script src="js/firebase-config.js"></script>
-<script src="js/data-service.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/energy-analytics.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/data-service.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/energy-analytics.js"></script>
 </body>
+
 </html>

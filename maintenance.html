@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LuminaGrid — Maintenance Management</title>
+  <meta name="description"
+    content="LuminaGrid Maintenance Management — Electrician maintenance logs, repair tracking and history">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <div class="app-shell">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="brand">
+        <span class="dot"></span>
+        LuminaGrid
+      </div>
+      <div class="nav-links" id="navLinks">
+        <a href="fault-records.html" data-roles="admin,electrician"><span class="nav-icon">📋</span> History</a>
+        <a href="energy-analytics.html" data-roles="admin,finance"><span class="nav-icon">📊</span> Report</a>
+        <a href="notifications.html" data-roles="admin,electrician,finance"><span class="nav-icon">🔔</span>
+          Notification</a>
+        <a href="energy-analytics.html" data-roles="admin,finance"><span class="nav-icon">⚡</span> Energy</a>
+        <a href="dashboard.html"><span class="nav-icon">📍</span> Dashboard</a>
+        <a href="node-management.html" data-roles="admin"><span class="nav-icon">⚙️</span> Admin</a>
+      </div>
+      <div class="user-chip">
+        <span id="userName">—</span>
+        <span class="role-badge" id="userRole">—</span>
+        <button class="logout-btn" id="logoutLink">🚪 logout</button>
+      </div>
+    </div>
+
+    <div class="page-wrap">
+
+      <div class="page-header">
+        <div>
+          <h2>Maintenance Management</h2>
+          <p class="subtitle">Log maintenance activities, acknowledge assigned fault alerts, and update repair statuses.
+          </p>
+        </div>
+        <button class="btn btn-amber" id="newLogBtn" style="width:auto; padding:8px 18px;">+ Log Maintenance
+          Record</button>
+      </div>
+
+      <!-- Active Tasks for Electrician -->
+      <div class="card" style="margin-bottom:20px;">
+        <h3>Assigned & Pending Repairs</h3>
+        <div id="pendingRepairsList">
+          <div class="empty-state">Loading assigned repairs...</div>
+        </div>
+      </div>
+
+      <!-- Maintenance History Table -->
+      <div class="card">
+        <h3>Maintenance Record History</h3>
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Record ID</th>
+              <th>Node / Pole</th>
+              <th>Electrician</th>
+              <th>Repair Status</th>
+              <th>Repair Date</th>
+              <th>Remarks</th>
+            </tr>
+          </thead>
+          <tbody id="maintenanceTableBody">
+            <tr>
+              <td colspan="6" class="empty-state">Loading maintenance records...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+
+    <!-- Log Maintenance Modal -->
+    <div class="modal-backdrop" id="maintenanceModal">
+      <div class="card" style="max-width:440px;">
+        <h2>Log Maintenance Record</h2>
+        <p class="sub">Record repair details and update streetlight status.</p>
+        <form id="maintenanceForm">
+          <div class="field">
+            <label>Target Streetlight Node</label>
+            <select id="mStreetlightSelect" required class="no-icon"></select>
+          </div>
+          <div class="field">
+            <label>Repair Status</label>
+            <select id="mRepairStatus" required class="no-icon">
+              <option value="Completed">Completed</option>
+              <option value="In Progress">In Progress</option>
+              <option value="Pending Parts">Pending Parts</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Remarks / Work Done</label>
+            <input type="text" id="mRemarks" placeholder="e.g. Replaced faulty relay unit" required class="no-icon">
+          </div>
+          <div style="display:flex; gap:10px; margin-top:16px;">
+            <button type="button" class="btn btn-secondary" id="cancelMaintBtn">Cancel</button>
+            <button type="submit" class="btn btn-amber">Save Record</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="js/firebase-config.js"></script>
+  <script src="js/data-service.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/maintenance.js"></script>
+</body>
+
+</html>

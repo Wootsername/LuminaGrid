@@ -7,6 +7,7 @@
       "last_name": "Dela Cruz",
       "role": "admin",
       "contact_number": "0917-000-1001",
+      "status": "Active",
       "created_at": "2026-01-15T08:00:00"
     },
     "u002": {
@@ -16,6 +17,7 @@
       "last_name": "Reyes",
       "role": "electrician",
       "contact_number": "0917-000-1002",
+      "status": "Active",
       "created_at": "2026-01-16T08:00:00"
     },
     "u003": {
@@ -25,56 +27,480 @@
       "last_name": "Santos",
       "role": "finance",
       "contact_number": "0917-000-1003",
+      "status": "Active",
       "created_at": "2026-01-16T09:00:00"
     }
   },
-
   "streetlights": {
-    "1": { "streetlight_id": "1", "pole_number": "GDLP-N01", "barangay": "Guadalupe", "latitude": 10.30712, "longitude": 123.88914, "installation_date": "2026-06-01", "status": "Active" },
-    "2": { "streetlight_id": "2", "pole_number": "GDLP-N02", "barangay": "Guadalupe", "latitude": 10.30756, "longitude": 123.88940, "installation_date": "2026-06-01", "status": "Active" },
-    "3": { "streetlight_id": "3", "pole_number": "GDLP-N03", "barangay": "Guadalupe", "latitude": 10.30801, "longitude": 123.88967, "installation_date": "2026-06-01", "status": "Faulty" },
-    "4": { "streetlight_id": "4", "pole_number": "GDLP-N04", "barangay": "Guadalupe", "latitude": 10.30845, "longitude": 123.88993, "installation_date": "2026-06-01", "status": "Offline" }
-  },
-
-  "sensor_readings": {
     "1": {
-      "r101": { "reading_id": "r101", "streetlight_id": "1", "current": 0.42, "voltage": 220.1, "ambient_light": 12.0, "power_consumption": 92.4, "light_status": "ON", "timestamp": "2026-08-09T19:00:00" }
+      "streetlight_id": "1",
+      "node_id": "LG-01",
+      "pole_number": "P-001",
+      "barangay": "Guadalupe",
+      "location": "Vicente Rama Ave. front Golden Success College",
+      "latitude": 10.30712,
+      "longitude": 123.88914,
+      "installation_date": "2026-06-01",
+      "status": "Active"
     },
     "2": {
-      "r102": { "reading_id": "r102", "streetlight_id": "2", "current": 0.41, "voltage": 219.8, "ambient_light": 11.5, "power_consumption": 90.1, "light_status": "ON", "timestamp": "2026-08-09T19:00:00" }
+      "streetlight_id": "2",
+      "node_id": "LG-02",
+      "pole_number": "P-002",
+      "barangay": "Guadalupe",
+      "location": "Vicente Rama Ave. near Guadalupe Bar.",
+      "latitude": 10.30756,
+      "longitude": 123.88940,
+      "installation_date": "2026-06-01",
+      "status": "Active"
     },
     "3": {
-      "r103": { "reading_id": "r103", "streetlight_id": "3", "current": 0.00, "voltage": 219.5, "ambient_light": 10.8, "power_consumption": 0.0, "light_status": "ON", "timestamp": "2026-08-09T19:00:00" }
+      "streetlight_id": "3",
+      "node_id": "LG-03",
+      "pole_number": "P-003",
+      "barangay": "Guadalupe",
+      "location": "Vicente Rama Ave. near Guadalupe Elem. School",
+      "latitude": 10.30801,
+      "longitude": 123.88967,
+      "installation_date": "2026-06-01",
+      "status": "Faulty"
     },
     "4": {
-      "r104": { "reading_id": "r104", "streetlight_id": "4", "current": 0.00, "voltage": 0.0, "ambient_light": 0.0, "power_consumption": 0.0, "light_status": "OFF", "timestamp": "2026-08-09T18:30:00" }
+      "streetlight_id": "4",
+      "node_id": "LG-04",
+      "pole_number": "P-004",
+      "barangay": "Guadalupe",
+      "location": "Vicente Rama Ave. cor. Ramon Duterte St.",
+      "latitude": 10.30845,
+      "longitude": 123.88993,
+      "installation_date": "2026-06-01",
+      "status": "Offline"
     }
   },
-
+  "sensor_readings": {
+    "1": {
+      "r101": {
+        "reading_id": "r101",
+        "streetlight_id": "1",
+        "current": 0.35,
+        "voltage": 222.0,
+        "ambient_light": 6.0,
+        "power_consumption": 77.7,
+        "light_status": "ON",
+        "timestamp": "2026-08-09T19:00:00"
+      },
+      "r105": {
+        "reading_id": "r105",
+        "streetlight_id": "1",
+        "current": 0.36,
+        "voltage": 221.5,
+        "ambient_light": 5.8,
+        "power_consumption": 79.7,
+        "light_status": "ON",
+        "timestamp": "2026-08-09T20:00:00"
+      },
+      "r109": {
+        "reading_id": "r109",
+        "streetlight_id": "1",
+        "current": 0.34,
+        "voltage": 222.3,
+        "ambient_light": 5.5,
+        "power_consumption": 75.6,
+        "light_status": "ON",
+        "timestamp": "2026-08-09T21:00:00"
+      },
+      "r201": {
+        "reading_id": "r201",
+        "streetlight_id": "1",
+        "current": 0.33,
+        "voltage": 220.8,
+        "ambient_light": 180.0,
+        "power_consumption": 0.0,
+        "light_status": "OFF",
+        "timestamp": "2026-08-10T06:00:00"
+      },
+      "r301": {
+        "reading_id": "r301",
+        "streetlight_id": "1",
+        "current": 0.35,
+        "voltage": 221.2,
+        "ambient_light": 7.2,
+        "power_consumption": 77.4,
+        "light_status": "ON",
+        "timestamp": "2026-08-10T19:00:00"
+      },
+      "r401": {
+        "reading_id": "r401",
+        "streetlight_id": "1",
+        "current": 0.34,
+        "voltage": 221.8,
+        "ambient_light": 6.5,
+        "power_consumption": 75.4,
+        "light_status": "ON",
+        "timestamp": "2026-08-11T19:00:00"
+      },
+      "r501": {
+        "reading_id": "r501",
+        "streetlight_id": "1",
+        "current": 0.36,
+        "voltage": 222.1,
+        "ambient_light": 5.0,
+        "power_consumption": 79.9,
+        "light_status": "ON",
+        "timestamp": "2026-08-12T19:00:00"
+      }
+    },
+    "2": {
+      "r102": {
+        "reading_id": "r102",
+        "streetlight_id": "2",
+        "current": 0.41,
+        "voltage": 219.8,
+        "ambient_light": 11.5,
+        "power_consumption": 90.1,
+        "light_status": "ON",
+        "timestamp": "2026-08-09T19:00:00"
+      },
+      "r106": {
+        "reading_id": "r106",
+        "streetlight_id": "2",
+        "current": 0.40,
+        "voltage": 220.1,
+        "ambient_light": 10.8,
+        "power_consumption": 88.0,
+        "light_status": "ON",
+        "timestamp": "2026-08-09T20:00:00"
+      },
+      "r110": {
+        "reading_id": "r110",
+        "streetlight_id": "2",
+        "current": 0.39,
+        "voltage": 220.4,
+        "ambient_light": 10.2,
+        "power_consumption": 86.0,
+        "light_status": "ON",
+        "timestamp": "2026-08-09T21:00:00"
+      },
+      "r302": {
+        "reading_id": "r302",
+        "streetlight_id": "2",
+        "current": 0.41,
+        "voltage": 220.0,
+        "ambient_light": 11.0,
+        "power_consumption": 90.2,
+        "light_status": "ON",
+        "timestamp": "2026-08-10T19:00:00"
+      },
+      "r402": {
+        "reading_id": "r402",
+        "streetlight_id": "2",
+        "current": 0.40,
+        "voltage": 219.5,
+        "ambient_light": 10.5,
+        "power_consumption": 87.8,
+        "light_status": "ON",
+        "timestamp": "2026-08-11T19:00:00"
+      },
+      "r502": {
+        "reading_id": "r502",
+        "streetlight_id": "2",
+        "current": 0.42,
+        "voltage": 220.3,
+        "ambient_light": 10.0,
+        "power_consumption": 92.5,
+        "light_status": "ON",
+        "timestamp": "2026-08-12T19:00:00"
+      }
+    },
+    "3": {
+      "r103": {
+        "reading_id": "r103",
+        "streetlight_id": "3",
+        "current": 0.00,
+        "voltage": 229.0,
+        "ambient_light": 10.0,
+        "power_consumption": 0.0,
+        "light_status": "OFF",
+        "timestamp": "2026-08-09T19:00:00"
+      },
+      "r107": {
+        "reading_id": "r107",
+        "streetlight_id": "3",
+        "current": 0.38,
+        "voltage": 220.5,
+        "ambient_light": 9.5,
+        "power_consumption": 83.8,
+        "light_status": "ON",
+        "timestamp": "2026-08-08T19:00:00"
+      },
+      "r303": {
+        "reading_id": "r303",
+        "streetlight_id": "3",
+        "current": 0.37,
+        "voltage": 220.8,
+        "ambient_light": 10.2,
+        "power_consumption": 81.7,
+        "light_status": "ON",
+        "timestamp": "2026-08-07T19:00:00"
+      }
+    },
+    "4": {
+      "r104": {
+        "reading_id": "r104",
+        "streetlight_id": "4",
+        "current": 0.00,
+        "voltage": 0.0,
+        "ambient_light": 0.0,
+        "power_consumption": 0.0,
+        "light_status": "OFF",
+        "timestamp": "2026-08-09T18:30:00"
+      },
+      "r108": {
+        "reading_id": "r108",
+        "streetlight_id": "4",
+        "current": 0.40,
+        "voltage": 220.2,
+        "ambient_light": 8.0,
+        "power_consumption": 88.1,
+        "light_status": "ON",
+        "timestamp": "2026-08-08T19:00:00"
+      },
+      "r304": {
+        "reading_id": "r304",
+        "streetlight_id": "4",
+        "current": 0.39,
+        "voltage": 219.7,
+        "ambient_light": 9.2,
+        "power_consumption": 85.7,
+        "light_status": "ON",
+        "timestamp": "2026-08-07T19:00:00"
+      }
+    }
+  },
   "fault_reports": {
     "f501": {
       "fault_id": "f501",
       "streetlight_id": "3",
       "reading_id": "r103",
-      "fault_type": "Lamp Burnout",
-      "description": "Zero current draw detected while light is expected ON (nighttime, LDR confirms dark).",
+      "fault_type": "Bulb Failure",
+      "description": "No current draw while light off. Zero current draw detected while light is expected ON (nighttime, LDR confirms dark).",
       "severity": "High",
       "status": "Pending",
       "detected_at": "2026-08-09T19:00:05",
       "resolved_at": null
+    },
+    "f502": {
+      "fault_id": "f502",
+      "streetlight_id": "2",
+      "reading_id": "r102",
+      "fault_type": "Overcurrent",
+      "description": "Current draw exceeded threshold of 0.5A. Possible wiring issue.",
+      "severity": "Medium",
+      "status": "Resolved",
+      "detected_at": "2026-07-28T20:15:00",
+      "resolved_at": "2026-07-29T10:30:00"
+    },
+    "f503": {
+      "fault_id": "f503",
+      "streetlight_id": "1",
+      "reading_id": "r101",
+      "fault_type": "Voltage Fluctuation",
+      "description": "Supply voltage dropped below 200V for more than 5 minutes.",
+      "severity": "Low",
+      "status": "Resolved",
+      "detected_at": "2026-07-20T21:00:00",
+      "resolved_at": "2026-07-21T08:00:00"
+    },
+    "f504": {
+      "fault_id": "f504",
+      "streetlight_id": "4",
+      "reading_id": "r104",
+      "fault_type": "Node Offline",
+      "description": "No heartbeat received from monitoring node for over 10 minutes.",
+      "severity": "High",
+      "status": "Pending",
+      "detected_at": "2026-08-09T18:35:00",
+      "resolved_at": null
+    },
+    "f505": {
+      "fault_id": "f505",
+      "streetlight_id": "3",
+      "reading_id": "r107",
+      "fault_type": "Lamp Flickering",
+      "description": "Intermittent current fluctuation detected — lamp flickering observed.",
+      "severity": "Medium",
+      "status": "Resolved",
+      "detected_at": "2026-07-15T22:10:00",
+      "resolved_at": "2026-07-16T14:20:00"
+    },
+    "f506": {
+      "fault_id": "f506",
+      "streetlight_id": "1",
+      "reading_id": "r201",
+      "fault_type": "Sensor Malfunction",
+      "description": "Ambient light sensor reporting inconsistent readings.",
+      "severity": "Low",
+      "status": "Resolved",
+      "detected_at": "2026-07-05T06:30:00",
+      "resolved_at": "2026-07-06T09:00:00"
     }
   },
-
-  "maintenance_records": {},
-
+  "maintenance_records": {
+    "m001": {
+      "maintenance_id": "m001",
+      "fault_id": "f502",
+      "streetlight_id": "2",
+      "user_id": "u002",
+      "repair_status": "Completed",
+      "repair_date": "2026-07-29T10:30:00",
+      "remarks": "Replaced damaged wiring at junction box. Tested current draw — now within normal range.",
+      "acknowledged_at": "2026-07-28T21:00:00"
+    },
+    "m002": {
+      "maintenance_id": "m002",
+      "fault_id": "f503",
+      "streetlight_id": "1",
+      "user_id": "u002",
+      "repair_status": "Completed",
+      "repair_date": "2026-07-21T08:00:00",
+      "remarks": "Voltage stabilizer installed. Monitored for 24 hours — stable.",
+      "acknowledged_at": "2026-07-20T22:00:00"
+    },
+    "m003": {
+      "maintenance_id": "m003",
+      "fault_id": "f505",
+      "streetlight_id": "3",
+      "user_id": "u002",
+      "repair_status": "Completed",
+      "repair_date": "2026-07-16T14:20:00",
+      "remarks": "Loose bulb socket tightened. Lamp tested for 2 hours — no flickering.",
+      "acknowledged_at": "2026-07-16T08:00:00"
+    },
+    "m004": {
+      "maintenance_id": "m004",
+      "fault_id": "f506",
+      "streetlight_id": "1",
+      "user_id": "u002",
+      "repair_status": "Completed",
+      "repair_date": "2026-07-06T09:00:00",
+      "remarks": "LDR sensor recalibrated. Readings now consistent.",
+      "acknowledged_at": "2026-07-05T08:00:00"
+    }
+  },
   "notifications": {
     "n901": {
       "notification_id": "n901",
       "fault_id": "f501",
       "user_id": "u002",
       "notification_type": "Fault Alert",
+      "message": "Fault detected at Node LG-03 (P-003) — Bulb failure. No current draw while light off.",
       "status": "Unread",
       "sent_at": "2026-08-09T19:00:06"
+    },
+    "n902": {
+      "notification_id": "n902",
+      "fault_id": "f501",
+      "user_id": "u001",
+      "notification_type": "Fault Alert",
+      "message": "Fault detected at Node LG-03 (P-003) — Bulb failure. No current draw while light off.",
+      "status": "Unread",
+      "sent_at": "2026-08-09T19:00:06"
+    },
+    "n903": {
+      "notification_id": "n903",
+      "fault_id": "f504",
+      "user_id": "u001",
+      "notification_type": "Fault Alert",
+      "message": "Node LG-04 (P-004) is offline. No heartbeat received.",
+      "status": "Unread",
+      "sent_at": "2026-08-09T18:35:01"
+    },
+    "n904": {
+      "notification_id": "n904",
+      "fault_id": "f502",
+      "user_id": "u002",
+      "notification_type": "Fault Alert",
+      "message": "Overcurrent detected at Node LG-02 (P-002). Please investigate.",
+      "status": "Read",
+      "sent_at": "2026-07-28T20:15:01"
+    },
+    "n905": {
+      "notification_id": "n905",
+      "fault_id": "f502",
+      "user_id": "u001",
+      "notification_type": "Resolution",
+      "message": "Fault f502 at Node LG-02 has been resolved by Mario Reyes.",
+      "status": "Read",
+      "sent_at": "2026-07-29T10:30:00"
+    },
+    "n906": {
+      "notification_id": "n906",
+      "fault_id": "f504",
+      "user_id": "u002",
+      "notification_type": "Fault Alert",
+      "message": "Node LG-04 (P-004) is offline. Dispatched for inspection.",
+      "status": "Read",
+      "sent_at": "2026-08-09T18:35:02"
+    },
+    "n907": {
+      "notification_id": "n907",
+      "fault_id": "f501",
+      "user_id": "u003",
+      "notification_type": "Fault Alert",
+      "message": "Fault detected at Node LG-03 (P-003) — Bulb failure.",
+      "status": "Unread",
+      "sent_at": "2026-08-09T19:00:10"
     }
+  },
+  "energy_monthly": {
+    "2026-01": {
+      "month": "January",
+      "total_kwh": 38.5,
+      "cost": 524.0
+    },
+    "2026-02": {
+      "month": "February",
+      "total_kwh": 42.1,
+      "cost": 573.0
+    },
+    "2026-03": {
+      "month": "March",
+      "total_kwh": 55.8,
+      "cost": 759.0
+    },
+    "2026-04": {
+      "month": "April",
+      "total_kwh": 62.3,
+      "cost": 848.0
+    },
+    "2026-05": {
+      "month": "May",
+      "total_kwh": 48.2,
+      "cost": 656.0
+    },
+    "2026-06": {
+      "month": "June",
+      "total_kwh": 51.0,
+      "cost": 694.0
+    },
+    "2026-07": {
+      "month": "July",
+      "total_kwh": 58.4,
+      "cost": 795.0
+    },
+    "2026-08": {
+      "month": "August",
+      "total_kwh": 163.3,
+      "cost": 2219.0
+    }
+  },
+  "system_config": {
+    "energy_rate_per_kwh": 13.60,
+    "current_threshold_high": 0.50,
+    "current_threshold_low": 0.10,
+    "voltage_threshold_low": 200,
+    "heartbeat_timeout_minutes": 10,
+    "dusk_lux_threshold": 50,
+    "dawn_lux_threshold": 150
   }
 }

@@ -1,13 +1,6 @@
 // ============================================================
-// LuminaGrid — User Management (Admin only)
-// Use Case: "Manage User Accounts" (Barangay/LGU Administrator)
-//
-// NOTE: DataService.addUser() only writes the profile record
-// (name, role, contact). It does NOT create a sign-in credential.
-// When Firebase is wired in, pair this with a Cloud Function that
-// creates the Firebase Auth user server-side and emails them a
-// setup link — creating other people's login credentials directly
-// from the client is not something to ship as-is.
+// LuminaGrid — User Management
+// Account Management (Create, Update, Deactivate, Role Mgmt)
 // ============================================================
 
 requireRole(["admin"]);
@@ -17,15 +10,17 @@ wireLogout();
 async function renderUsers() {
   const users = await DataService.getUsers();
   const body = document.getElementById("userTableBody");
+
   body.innerHTML = users
     .map(
       (u) => `
       <tr>
+        <td><strong>${u.user_id}</strong></td>
         <td>${u.first_name} ${u.last_name}</td>
         <td>${u.email}</td>
-        <td><span class="role-badge">${roleLabel(u.role)}</span></td>
+        <td><span class="role-badge" style="background:var(--gray-200); color:var(--navy-900);">${roleLabel(u.role)}</span></td>
         <td>${u.contact_number || "—"}</td>
-        <td>${formatDateTime(u.created_at)}</td>
+        <td><span class="status-pill ${u.status === 'Deactivated' ? 'offline' : 'ok'}">${u.status || 'Active'}</span></td>
         <td>
           ${u.role === "admin" ? "" : `<button class="link-btn danger" onclick="deactivate('${u.user_id}')">Deactivate</button>`}
         </td>
@@ -35,7 +30,7 @@ async function renderUsers() {
 }
 
 async function deactivate(userId) {
-  if (!confirm("Deactivate this account?")) return;
+  if (!confirm("Deactivate this user account?")) return;
   await DataService.deactivateUser(userId);
   renderUsers();
 }

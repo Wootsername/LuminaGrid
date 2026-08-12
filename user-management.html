@@ -1,83 +1,109 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LuminaGrid — User Management</title>
-<link rel="stylesheet" href="css/style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LuminaGrid — User Management</title>
+  <meta name="description"
+    content="LuminaGrid User Management — Manage accounts and roles for Maintenance Electricians and Budget/Finance Officers">
+  <link rel="stylesheet" href="css/style.css">
 </head>
+
 <body>
 
-<div class="app-shell">
+  <div class="app-shell">
 
-  <div class="topbar">
-    <div class="brand"><span class="dot"></span>LuminaGrid<small>Guadalupe, Cebu City</small></div>
-    <div class="nav-links" id="navLinks">
-      <a href="dashboard.html">Map</a>
-      <a href="energy-analytics.html" data-roles="admin,finance">Energy Analytics</a>
-      <a href="node-management.html" data-roles="admin">Node Management</a>
-      <a href="user-management.html" class="active" data-roles="admin">Users</a>
-      <a href="fault-records.html" data-roles="admin">Fault Records</a>
-      <a href="system-logs.html" data-roles="admin">System Logs</a>
-    </div>
-    <div class="user-chip">
-      <span id="userName">—</span>
-      <span class="role-badge" id="userRole">—</span>
-      <a href="#" id="logoutLink" class="btn-secondary" style="padding:6px 12px;border-radius:8px;">Sign Out</a>
-    </div>
-  </div>
-
-  <div class="analytics-wrap">
-    <div class="analytics-toolbar">
-      <div>
-        <h2 style="margin:0;">User Accounts</h2>
-        <p style="margin:4px 0 0 0; color:var(--slate-400); font-size:0.85rem;">
-          Maintenance Electrician and Budget/Finance Officer accounts are provisioned here.
-          The Barangay/LGU Administrator account itself is created by the Super Admin.
-        </p>
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="brand">
+        <span class="dot"></span>
+        LuminaGrid
       </div>
-      <button class="btn" id="addUserBtn" style="width:auto; padding:8px 16px;">+ Add User</button>
+      <div class="nav-links" id="navLinks">
+        <a href="fault-records.html" data-roles="admin,electrician"><span class="nav-icon">📋</span> History</a>
+        <a href="energy-analytics.html" data-roles="admin,finance"><span class="nav-icon">📊</span> Report</a>
+        <a href="notifications.html" data-roles="admin,electrician,finance"><span class="nav-icon">🔔</span>
+          Notification</a>
+        <a href="energy-analytics.html" data-roles="admin,finance"><span class="nav-icon">⚡</span> Energy</a>
+        <a href="dashboard.html"><span class="nav-icon">📍</span> Dashboard</a>
+        <a href="node-management.html" class="active" data-roles="admin"><span class="nav-icon">⚙️</span> Admin</a>
+      </div>
+      <div class="user-chip">
+        <span id="userName">—</span>
+        <span class="role-badge" id="userRole">—</span>
+        <button class="logout-btn" id="logoutLink">🚪 logout</button>
+      </div>
     </div>
 
-    <div class="chart-panel">
-      <table class="data-table">
-        <thead>
-          <tr><th>Name</th><th>Email</th><th>Role</th><th>Contact</th><th>Added</th><th></th></tr>
-        </thead>
-        <tbody id="userTableBody"></tbody>
-      </table>
+    <div class="page-wrap">
+      <div class="page-header">
+        <div>
+          <h2>Account & Role Management</h2>
+          <p class="subtitle">Provision and manage user accounts for Maintenance Electricians and Budget/Finance
+            Officers.</p>
+        </div>
+        <button class="btn btn-amber" id="addUserBtn" style="width:auto; padding:8px 18px;">+ Create User
+          Account</button>
+      </div>
+
+      <!-- User Table Card -->
+      <div class="card">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>User ID</th>
+              <th>Name</th>
+              <th>Email / Username</th>
+              <th>Assigned Role</th>
+              <th>Contact</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="userTableBody">
+            <tr>
+              <td colspan="7" class="empty-state">Loading users...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
+
+    <!-- Create User Modal -->
+    <div class="modal-backdrop" id="userModal">
+      <div class="card" style="max-width:420px;">
+        <h2>Create User Account</h2>
+        <p class="sub">Provision a new personnel account for LuminaGrid.</p>
+        <form id="userForm">
+          <div class="field"><label>First Name</label><input type="text" id="firstName" required class="no-icon"></div>
+          <div class="field"><label>Last Name</label><input type="text" id="lastName" required class="no-icon"></div>
+          <div class="field"><label>Municipal Email / Username</label><input type="email" id="email" required
+              class="no-icon"></div>
+          <div class="field"><label>Contact Number</label><input type="text" id="contactNumber"
+              placeholder="0917-000-0000" class="no-icon"></div>
+          <div class="field">
+            <label>Assign Role</label>
+            <select id="userRoleSelect" required class="no-icon">
+              <option value="electrician">Maintenance Electrician</option>
+              <option value="finance">Budget / Finance Officer</option>
+              <option value="admin">Barangay / LGU Administrator</option>
+            </select>
+          </div>
+          <div style="display:flex; gap:10px; margin-top:16px;">
+            <button type="button" class="btn btn-secondary" id="cancelUserBtn">Cancel</button>
+            <button type="submit" class="btn btn-amber">Create Account</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
   </div>
 
-  <div class="modal-backdrop" id="userModal">
-    <div class="card" style="max-width:420px;">
-      <h2>Add User</h2>
-      <p class="sub">Creates the account profile. Pair this with a Firebase Auth invite once Firebase is wired in.</p>
-      <form id="userForm">
-        <div class="field"><label>First name</label><input type="text" id="firstName" required></div>
-        <div class="field"><label>Last name</label><input type="text" id="lastName" required></div>
-        <div class="field"><label>Email</label><input type="email" id="email" required></div>
-        <div class="field"><label>Contact number</label><input type="text" id="contactNumber" placeholder="0917-000-0000"></div>
-        <div class="field">
-          <label>Role</label>
-          <select id="userRoleSelect" required>
-            <option value="electrician">Maintenance Electrician</option>
-            <option value="finance">Budget / Finance Officer</option>
-          </select>
-        </div>
-        <div style="display:flex; gap:10px; margin-top:8px;">
-          <button type="button" class="btn btn-secondary" id="cancelUserBtn">Cancel</button>
-          <button type="submit" class="btn">Save User</button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-</div>
-
-<script src="js/firebase-config.js"></script>
-<script src="js/data-service.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/user-management.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/data-service.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/user-management.js"></script>
 </body>
+
 </html>

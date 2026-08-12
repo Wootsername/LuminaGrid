@@ -93,12 +93,33 @@ const DataService = (() => {
     return record;
   }
 
+  async function updateMaintenanceRecord(id, updates) {
+    const data = await _load();
+    if (data.maintenance_records[id]) {
+      Object.assign(data.maintenance_records[id], updates);
+    }
+    return data.maintenance_records[id];
+  }
+
   // ---------- Notifications ----------
   async function getNotifications(userId) {
     const data = await _load();
     let items = Object.values(data.notifications || {});
     if (userId) items = items.filter((n) => n.user_id === userId);
     return items.sort((a, b) => new Date(b.sent_at) - new Date(a.sent_at));
+  }
+
+  async function markNotificationRead(notificationId) {
+    const data = await _load();
+    if (data.notifications[notificationId]) {
+      data.notifications[notificationId].status = "Read";
+    }
+    return data.notifications[notificationId];
+  }
+
+  async function getUnreadCount(userId) {
+    const notifs = await getNotifications(userId);
+    return notifs.filter((n) => n.status === "Unread").length;
   }
 
   // ---------- Users ----------
@@ -117,6 +138,7 @@ const DataService = (() => {
     const id = "u" + String(Object.keys(data.users).length + 1).padStart(3, "0");
     user.user_id = id;
     user.created_at = new Date().toISOString();
+    user.status = "Active";
     data.users[id] = user;
     return user;
   }
@@ -134,13 +156,31 @@ const DataService = (() => {
     return totalWatts / 1000; // rough placeholder until real interval-based accumulation exists
   }
 
+  async function getMonthlyEnergy() {
+    const data = await _load();
+    return data.energy_monthly || {};
+  }
+
+  // ---------- System config ----------
+  async function getSystemConfig() {
+    const data = await _load();
+    return data.system_config || {};
+  }
+
+  async function updateSystemConfig(updates) {
+    const data = await _load();
+    Object.assign(data.system_config, updates);
+    return data.system_config;
+  }
+
   return {
     getStreetlights, getStreetlight, upsertStreetlight,
     getLatestReading, getAllReadings,
     getFaultReports, resolveFaultReport,
-    getMaintenanceRecords, addMaintenanceRecord,
-    getNotifications,
+    getMaintenanceRecords, addMaintenanceRecord, updateMaintenanceRecord,
+    getNotifications, markNotificationRead, getUnreadCount,
     getUsers, getUserByEmail, addUser, deactivateUser,
-    getTotalKwhToday
+    getTotalKwhToday, getMonthlyEnergy,
+    getSystemConfig, updateSystemConfig
   };
 })();

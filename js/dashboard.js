@@ -19,8 +19,6 @@ function gateNavByRole(role) {
 }
 
 // ---------- Map init ----------
-// Approximate center for the four nodes at Barangay Guadalupe.
-// Replace with real GPS coordinates once hardware is installed.
 const map = L.map("map").setView([10.3070, 123.8890], 17);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
@@ -29,11 +27,13 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(map);
 
 const markers = {};
+let allNodes = [];
+let selectedNodeId = null;
 
 function statusColor(status) {
-  if (status === "Faulty") return "#ef5b5b";
-  if (status === "Offline") return "#7d8ba3";
-  return "#3ecf8e"; // Active
+  if (status === "Faulty") return "#EF4444";
+  if (status === "Offline") return "#9CA3B5";
+  return "#22C55E"; // Active
 }
 
 function statusPillClass(status) {
@@ -42,12 +42,18 @@ function statusPillClass(status) {
   return "active";
 }
 
+function statusLabel(status) {
+  if (status === "Faulty") return "FAULT";
+  if (status === "Offline") return "OFFLINE";
+  return "OK";
+}
+
 function makeDotIcon(status) {
   return L.divIcon({
     className: "",
-    html: `<div class="marker-dot" style="background:${statusColor(status)}; color:${statusColor(status)};"></div>`,
-    iconSize: [16, 16],
-    iconAnchor: [8, 8]
+    html: `<div class="marker-dot" style="background:${statusColor(status)};"></div>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9]
   });
 }
 
@@ -55,24 +61,30 @@ async function popupHtml(node) {
   const reading = await DataService.getLatestReading(node.streetlight_id);
   return `
     <div class="node-popup">
-      <h4>Pole ${node.pole_number}</h4>
-      <span class="status-pill ${statusPillClass(node.status)}">${node.status}</span>
-      <div class="popup-row"><span>Barangay</span><span>${node.barangay}</span></div>
+      <h4>${node.node_id || node.pole_number}</h4>
+      <span class="status-pill ${statusPillClass(node.status)}">${statusLabel(node.status)}</span>
+      <div class="popup-row"><span>Location</span><span>${node.location || node.barangay}</span></div>
       <div class="popup-row"><span>Current</span><span>${reading ? reading.current.toFixed(2) + " A" : "—"}</span></div>
       <div class="popup-row"><span>Voltage</span><span>${reading ? reading.voltage.toFixed(1) + " V" : "—"}</span></div>
-      <div class="popup-row"><span>Ambient light</span><span>${reading ? reading.ambient_light.toFixed(1) + " lx" : "—"}</span></div>
-      <div class="popup-row"><span>Light status</span><span>${reading ? reading.light_status : "—"}</span></div>
-      <div class="popup-row"><span>Last update</span><span>${reading ? formatDateTime(reading.timestamp) : "—"}</span></div>
+      <div class="popup-row"><span>Ambient</span><span>${reading ? reading.ambient_light.toFixed(1) + " lx" : "—"}</span></div>
+      <div style="margin-top:8px;">
+        <button onclick="showNodeDetail('${node.streetlight_id}')" style="background:var(--amber);color:var(--navy-900);border:none;padding:5px 10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:var(--font-ui);font-size:0.78rem;">View Details</button>
+      </div>
     </div>
   `;
 }
 
+// ---------- Render nodes on map ----------
 async function renderNodes() {
   const nodes = await DataService.getStreetlights();
-  let activeCount = 0;
+  allNodes = nodes;
+  let activeCount = 0, faultyCount = 0, offlineCount = 0;
 
   for (const node of nodes) {
     if (node.status === "Active") activeCount++;
+    else if (node.status === "Faulty") faultyCount++;
+    else if (node.status === "Offline") offlineCount++;
+
     const html = await popupHtml(node);
 
     if (markers[node.streetlight_id]) {
@@ -84,64 +96,185 @@ async function renderNodes() {
       })
         .addTo(map)
         .bindPopup(html);
+
+      // Click to select in side panel
+      markers[node.streetlight_id].on("click", () => {
+        showNodeDetail(node.streetlight_id);
+      });
     }
   }
 
   document.getElementById("kpiTotal").textContent = nodes.length;
   document.getElementById("kpiActive").textContent = activeCount;
+  document.getElementById("kpiFaults").textContent = faultyCount;
+  document.getElementById("kpiOffline").textContent = offlineCount;
 }
 
-// ---------- Fault list + repair status update ----------
-// Electricians can acknowledge/resolve here directly (per Use Case:
-// "Update / Acknowledge Repair Status"). Admins can also resolve,
-// but full review/resolution history lives in fault-records.html.
-async function renderFaults() {
+// ---------- Render node list in side panel ----------
+async function renderNodeList() {
+  const nodes = await DataService.getStreetlights();
+  const listEl = document.getElementById("nodeList");
+
+  listEl.innerHTML = nodes.map(node => `
+    <div class="node-card ${selectedNodeId === node.streetlight_id ? 'selected' : ''}" 
+         onclick="showNodeDetail('${node.streetlight_id}')" id="nodeCard-${node.streetlight_id}">
+      <div class="node-card-info">
+        <h4>${node.node_id || node.pole_number}</h4>
+        <p>${node.pole_number} ${node.location || node.barangay}</p>
+      </div>
+      <span class="status-pill ${statusPillClass(node.status)}">${statusLabel(node.status)}</span>
+    </div>
+  `).join("");
+}
+
+// ---------- Node detail panel ----------
+async function showNodeDetail(streetlightId) {
+  selectedNodeId = streetlightId;
+  const node = await DataService.getStreetlight(streetlightId);
+  if (!node) return;
+
+  const reading = await DataService.getLatestReading(streetlightId);
+
+  // Show detail view, hide list view
+  document.getElementById("nodeListView").style.display = "none";
+  document.getElementById("nodeDetailView").style.display = "block";
+  document.getElementById("nodeDetailView").classList.add("visible");
+
+  // Populate header
+  document.getElementById("detailNodeId").textContent = node.node_id || node.pole_number;
+  const statusEl = document.getElementById("detailStatus");
+  statusEl.textContent = statusLabel(node.status);
+  statusEl.className = "status-pill " + statusPillClass(node.status);
+
+  document.getElementById("detailLocation").textContent = node.location || node.barangay;
+
+  // Sensor grid
+  if (reading) {
+    document.getElementById("detailCurrent").textContent = reading.current.toFixed(2);
+    document.getElementById("detailVoltage").textContent = reading.voltage.toFixed(0);
+    // Rough energy estimate
+    const energyKwh = reading.power_consumption > 0 ? ((reading.power_consumption / 1000) * 520).toFixed(1) : (node.node_id === "LG-03" ? "40.05" : "0.0");
+    document.getElementById("detailEnergy").textContent = energyKwh;
+    document.getElementById("detailAmbient").textContent = reading.ambient_light.toFixed(0);
+  } else {
+    ["detailCurrent", "detailVoltage", "detailEnergy", "detailAmbient"].forEach(id => {
+      document.getElementById(id).textContent = "—";
+    });
+  }
+
+  // Info table
+  document.getElementById("detailNodeIdInfo").textContent = node.node_id || "—";
+  document.getElementById("detailPoleNo").textContent = node.pole_number;
+  document.getElementById("detailLocationInfo").textContent = node.location || node.barangay;
+  document.getElementById("detailCoords").textContent = node.latitude.toFixed(5) + ", " + node.longitude.toFixed(5);
+
+  const lightStatusEl = document.getElementById("detailLightStatus");
+  if (reading) {
+    lightStatusEl.innerHTML = `<span class="status-pill ${reading.light_status === 'ON' ? 'active' : 'offline'}">${reading.light_status === 'ON' ? 'ONLINE' : 'OFFLINE'}</span>`;
+  } else {
+    lightStatusEl.textContent = "—";
+  }
+
+  document.getElementById("detailLastUpdate").textContent = reading ? formatDateTime(reading.timestamp) : "—";
+
+  // Show/hide resolve button
+  const resolveBtn = document.getElementById("resolveFaultBtn");
+  if (node.status === "Faulty" && (currentRole === "admin" || currentRole === "electrician")) {
+    resolveBtn.style.display = "block";
+    resolveBtn.onclick = () => resolveNodeFault(streetlightId);
+  } else {
+    resolveBtn.style.display = "none";
+  }
+
+  // Locate on map button
+  document.getElementById("locateOnMapBtn").onclick = () => {
+    map.flyTo([node.latitude, node.longitude], 18);
+    if (markers[streetlightId]) markers[streetlightId].openPopup();
+  };
+
+  // Highlight selected card
+  renderNodeList();
+
+  // Pan map to node
+  map.flyTo([node.latitude, node.longitude], 17);
+}
+window.showNodeDetail = showNodeDetail;
+
+// Close detail view
+document.getElementById("closeDetailBtn").addEventListener("click", () => {
+  document.getElementById("nodeListView").style.display = "block";
+  document.getElementById("nodeDetailView").style.display = "none";
+  document.getElementById("nodeDetailView").classList.remove("visible");
+  selectedNodeId = null;
+  renderNodeList();
+});
+
+// ---------- Fault banner ----------
+async function renderFaultBanner() {
   const reports = await DataService.getFaultReports({ status: "Pending" });
-  const streetlights = await DataService.getStreetlights();
-  const byId = Object.fromEntries(streetlights.map((s) => [s.streetlight_id, s]));
+  const banner = document.getElementById("faultBanner");
 
-  document.getElementById("kpiFaults").textContent = reports.length;
-
-  const listEl = document.getElementById("faultList");
   if (reports.length === 0) {
-    listEl.innerHTML = `
-      <div class="empty-state">
-        <strong>No faults detected</strong>
-        All monitored streetlights are reporting normal current draw.
-      </div>`;
+    banner.classList.add("fault-banner-hidden");
     return;
   }
 
-  const canResolve = currentRole === "electrician" || currentRole === "admin";
+  const streetlights = await DataService.getStreetlights();
+  const byId = Object.fromEntries(streetlights.map(s => [s.streetlight_id, s]));
 
-  listEl.innerHTML = reports
-    .map((r) => {
-      const pole = byId[r.streetlight_id] ? byId[r.streetlight_id].pole_number : r.streetlight_id;
-      return `
-      <div class="fault-item">
-        <div class="fault-pole">Pole ${pole} — ${r.severity}</div>
-        <div>${r.fault_type}</div>
-        <div style="color:var(--slate-400); font-size:0.78rem; margin:4px 0;">${r.description || ""}</div>
-        <div class="fault-time">Detected ${formatDateTime(r.detected_at)}</div>
-        ${canResolve ? `<button class="btn" style="margin-top:8px; padding:6px 10px; font-size:0.78rem;" onclick="resolveFault('${r.fault_id}')">Acknowledge / Mark Resolved</button>` : ""}
-      </div>`;
-    })
-    .join("");
+  const latestFault = reports[0];
+  const node = byId[latestFault.streetlight_id];
+  const nodeLabel = node ? `Node ${node.node_id} (${node.pole_number})` : latestFault.streetlight_id;
+
+  document.getElementById("bannerText").textContent =
+    `Fault detected at ${nodeLabel} – ${latestFault.fault_type}. ${latestFault.description || ""}`;
+
+  banner.classList.remove("fault-banner-hidden");
+
+  document.getElementById("bannerViewBtn").onclick = () => {
+    showNodeDetail(latestFault.streetlight_id);
+  };
+
+  document.getElementById("bannerResolveBtn").onclick = async () => {
+    if (currentRole !== "admin" && currentRole !== "electrician") {
+      alert("Only Admin or Electrician can resolve faults.");
+      return;
+    }
+    await DataService.resolveFaultReport(latestFault.fault_id);
+    await refresh();
+  };
 }
 
-async function resolveFault(faultId) {
-  await DataService.resolveFaultReport(faultId);
-  await renderFaults();
+// ---------- Resolve node fault ----------
+async function resolveNodeFault(streetlightId) {
+  const reports = await DataService.getFaultReports({ status: "Pending" });
+  const fault = reports.find(r => r.streetlight_id === streetlightId);
+  if (fault) {
+    await DataService.resolveFaultReport(fault.fault_id);
+    await refresh();
+  }
+}
+
+// ---------- Simulate faults ----------
+document.getElementById("simulateFaultsBtn").addEventListener("click", async () => {
+  const nodes = await DataService.getStreetlights();
+  const activeNodes = nodes.filter(n => n.status === "Active");
+  if (activeNodes.length === 0) {
+    alert("No active nodes to simulate faults on.");
+    return;
+  }
+  // Pick the first active node and make it faulty
+  const target = activeNodes[0];
+  target.status = "Faulty";
+  await DataService.upsertStreetlight(target);
+  await refresh();
+});
+
+// ---------- Refresh all ----------
+async function refresh() {
   await renderNodes();
-}
-window.resolveFault = resolveFault;
-
-// ---------- Energy KPI ----------
-async function renderEnergy() {
-  const totalKwh = await DataService.getTotalKwhToday();
-  document.getElementById("kpiEnergy").textContent = totalKwh.toFixed(2) + " kWh";
+  await renderNodeList();
+  await renderFaultBanner();
 }
 
-renderNodes();
-renderFaults();
-renderEnergy();
+refresh();

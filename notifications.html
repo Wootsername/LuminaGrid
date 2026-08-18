@@ -46,17 +46,58 @@
         </div>
       </div>
 
-      <!-- Notifications Card -->
-      <div class="card">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
-          <h3>Alert Feed</h3>
-          <span style="font-size:0.8rem; color:var(--gray-400);" id="unreadBannerText">0 unread notifications</span>
+      <!-- Notifications Panel -->
+      <div class="notif-panel">
+        <div class="notif-toolbar">
+          <div class="notif-bell-wrap">
+            <button class="notif-bell-btn" type="button" title="Alerts">🔔</button>
+            <span class="notif-bell-badge" id="notifUnreadBadge" style="display:none;">0</span>
+          </div>
+          <div class="notif-search-wrap">
+            <span class="notif-mag">🔍</span>
+            <input type="text" id="notifSearchInput" placeholder="Search by node, pole, or address">
+          </div>
+          <label class="notif-date-select">
+            📅
+            <select id="notifDateFilter">
+              <option value="">All dates</option>
+              <option value="7">Last 7 days</option>
+              <option value="30">Last 30 days</option>
+            </select>
+          </label>
         </div>
-        <div id="notificationsList">
-          <div class="empty-state">Loading notifications...</div>
-        </div>
+
+        <table class="notif-table">
+          <thead>
+            <tr>
+              <th class="notif-icon-col"></th>
+              <th>Date</th>
+              <th>Node ID</th>
+              <th>Pole ID</th>
+              <th>Address</th>
+              <th class="notif-action-col">Action</th>
+            </tr>
+          </thead>
+          <tbody id="notificationsList">
+            <tr>
+              <td colspan="6" class="empty-state">Loading notifications...</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
+    </div>
+
+    <!-- Notification Detail Modal -->
+    <div class="modal-backdrop" id="notifModal">
+      <div class="card" style="max-width:440px;">
+        <h2 id="notifModalTitle">Notification</h2>
+        <div class="sub" id="notifModalBody"></div>
+        <div style="display:flex; gap:10px; margin-top:16px;">
+          <button type="button" class="btn btn-secondary" id="notifModalCloseBtn">Close</button>
+          <button type="button" class="btn btn-amber" id="notifMarkReadBtn" style="display:none;">Mark read</button>
+        </div>
+      </div>
     </div>
 
   </div>

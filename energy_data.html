@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LuminaGrid — Energy</title>
+  <meta name="description"
+    content="LuminaGrid Energy — Total consumption, per-node breakdown, and estimated monthly cost across all monitoring nodes">
+  <link rel="stylesheet" href="css/style.css">
+
+  <!-- Page-specific styles for the "Consumption by Node" gradient bar chart.
+       (Kept scoped to this page for now — worth lifting into css/style.css
+       alongside .reports-grid / .energy-stat if a second page ever needs it.) -->
+  <style>
+    .node-bar-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 12px 0;
+    }
+
+    .node-bar-row+.node-bar-row {
+      border-top: 1px solid var(--gray-100);
+    }
+
+    .node-bar-label {
+      width: 74px;
+      flex-shrink: 0;
+      line-height: 1.25;
+    }
+
+    .node-bar-label .node-id {
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: var(--gray-900);
+    }
+
+    .node-bar-label .node-pole {
+      font-size: 0.72rem;
+      color: var(--gray-400);
+    }
+
+    .node-bar-track {
+      flex: 1;
+      height: 22px;
+      background: var(--gray-100);
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .node-bar-fill {
+      height: 100%;
+      border-radius: 20px;
+      transition: width 0.6s ease;
+    }
+
+    .grad-navy-blue {
+      background: linear-gradient(90deg, #0F1E3D 0%, #1D4E89 45%, #3FA9F5 100%);
+    }
+
+    .grad-red-orange {
+      background: linear-gradient(90deg, #7A1F1F 0%, #C0392B 45%, #F39C12 100%);
+    }
+
+    .grad-gray {
+      background: linear-gradient(90deg, #4B5563 0%, #6B7280 55%, #9CA3AF 100%);
+    }
+
+    .node-bar-value {
+      width: 74px;
+      flex-shrink: 0;
+      text-align: right;
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: var(--gray-900);
+      font-size: 0.9rem;
+    }
+
+    .energy-kpi-icon {
+      width: 46px;
+      height: 46px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+
+    .breakdown-total-row td {
+      font-weight: 700;
+      color: var(--gray-900);
+      background: var(--gray-50);
+      border-top: 2px solid var(--gray-200);
+    }
+
+    @media (max-width: 600px) {
+      .node-bar-label {
+        width: 58px;
+      }
+
+      .node-bar-value {
+        width: 58px;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="app-shell">
+
+    <!-- Top navigation bar -->
+    <div class="topbar">
+      <div class="brand">
+        <span class="dot"></span>
+        LuminaGrid
+      </div>
+      <div class="nav-links" id="navLinks">
+        <a href="fault-records.html" data-roles="admin,electrician"><span class="nav-icon">📋</span> History</a>
+        <a href="energy-analytics.html" data-roles="admin,finance"><span class="nav-icon">📊</span> Report</a>
+        <a href="notifications.html" data-roles="admin,electrician,finance"><span class="nav-icon">🔔</span>
+          Notification</a>
+        <a href="energy_data.html" class="active" data-roles="admin,finance"><span class="nav-icon">⚡</span>
+          Energy</a>
+        <a href="dashboard.html"><span class="nav-icon">📍</span> Dashboard</a>
+        <a href="node-management.html" data-roles="admin"><span class="nav-icon">⚙️</span> Admin</a>
+      </div>
+      <div class="user-chip">
+        <span id="userName">—</span>
+        <span class="role-badge" id="userRole">—</span>
+        <button class="logout-btn" id="logoutLink">🚪 logout</button>
+      </div>
+    </div>
+
+    <div class="page-wrap">
+
+      <!-- Page header -->
+      <div class="page-header">
+        <div>
+          <h2 style="display:flex; align-items:center; gap:8px;">⚡ Energy</h2>
+          <p class="subtitle">Consumption, active status, and estimated cost across all monitoring nodes —
+            Guadalupe, Cebu City</p>
+        </div>
+        <div style="font-size:0.82rem; color:var(--gray-400);">
+          Billing period: <strong style="color:var(--gray-900);" id="billingPeriod">August 2026</strong>
+        </div>
+      </div>
+
+      <!-- KPI row: 4 stat cards -->
+      <div class="kpi-row">
+        <div class="kpi-card">
+          <div class="energy-kpi-icon" style="background:#FFF3E0; color:#F97316;">⚡</div>
+          <div class="kpi-info">
+            <div class="label">Total Consumption</div>
+            <div class="value"><span id="statTotalKwh">—</span>
+              <span style="font-size:0.8rem; font-weight:500; color:var(--gray-400);">kWh</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="energy-kpi-icon" style="background:#FFF8E1; color:#F5A623;">📍</div>
+          <div class="kpi-info">
+            <div class="label">Average / Node</div>
+            <div class="value"><span id="statAvgNode">—</span>
+              <span style="font-size:0.8rem; font-weight:500; color:var(--gray-400);">kWh</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="energy-kpi-icon" style="background:#E8F5E9; color:#2E7D32; font-weight:700;">₱</div>
+          <div class="kpi-info">
+            <div class="label">Est. Monthly Cost</div>
+            <div class="value" id="statMonthlyCost">—</div>
+          </div>
+        </div>
+
+        <div class="kpi-card">
+          <div class="energy-kpi-icon" style="background:#FFFDE7; color:#FBC02D;">💡</div>
+          <div class="kpi-info">
+            <div class="label">Active Lights</div>
+            <div class="value"><span id="statActiveLights">—</span>
+              <span style="font-size:0.8rem; font-weight:500; color:var(--gray-400);">kWh</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Consumption by Node -->
+      <div class="card">
+        <h2 style="font-size:1rem; text-transform:uppercase; letter-spacing:0.4px;">Consumption by Node (kWh)</h2>
+        <div id="nodeBarList">
+          <!-- rows injected by js/energy-data.js -->
+        </div>
+      </div>
+
+      <!-- Detailed Breakdown -->
+      <div class="card">
+        <h2 style="font-size:1rem; text-transform:uppercase; letter-spacing:0.4px;">Detailed Breakdown</h2>
+        <div style="overflow-x:auto;">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Node</th>
+                <th>Location</th>
+                <th>Status</th>
+                <th>Power (kW)</th>
+                <th>Energy (kWh)</th>
+                <th>Est. Cost (₱)</th>
+              </tr>
+            </thead>
+            <tbody id="breakdownBody">
+              <!-- rows injected by js/energy-data.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="js/firebase-config.js"></script>
+  <script src="js/data-service.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/energy-data.js"></script>
+</body>
+
+</html>

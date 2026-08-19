@@ -17,8 +17,7 @@
     <!-- Top bar -->
     <div class="topbar">
       <div class="brand">
-        <span class="dot"></span>
-        LuminaGrid
+        <img src="assets/logo2.png" alt="LuminaGrid">
       </div>
       <div class="nav-links" id="navLinks">
         <a href="fault-records.html" data-roles="admin,electrician"><span class="nav-icon">📋</span> History</a>
@@ -43,15 +42,17 @@
           <p class="subtitle">Register ESP32 monitoring nodes, configure location metadata, and set operating
             thresholds.</p>
         </div>
-        <div style="display:flex; gap:10px;">
-          <button class="btn btn-secondary" id="configBtn" style="width:auto; padding:8px 16px;">⚙️ Thresholds</button>
-          <button class="btn btn-amber" id="addNodeBtn" style="width:auto; padding:8px 16px;">+ Register Node</button>
+        <div class="admin-top-actions">
+          <button class="btn btn-secondary admin-action-btn" id="configBtn">Thresholds</button>
+          <button class="btn btn-amber admin-action-btn" id="addNodeBtn">Register Node</button>
         </div>
       </div>
 
       <!-- Node Table Card -->
-      <div class="card">
-        <h3>Registered Monitoring Nodes</h3>
+      <div class="card admin-table-card">
+        <div class="admin-card-header">
+          <h3>Registered Monitoring Nodes</h3>
+        </div>
         <table class="data-table">
           <thead>
             <tr>
@@ -71,11 +72,10 @@
         </table>
       </div>
 
-      <p style="text-align:right; margin-top:-10px;">
-        <a href="user-management.html" style="font-size:0.85rem; font-weight:600;">Manage User Accounts →</a>
-        &nbsp;|&nbsp;
-        <a href="system-logs.html" style="font-size:0.85rem; font-weight:600;">View System Logs →</a>
-      </p>
+      <div class="admin-bottom-actions">
+        <a class="admin-quick-link admin-quick-link-users" href="user-management.html">Manage User Accounts</a>
+        <a class="admin-quick-link admin-quick-link-logs" href="system-logs.html">View System Logs</a>
+      </div>
     </div>
 
     <!-- Register Node Modal -->

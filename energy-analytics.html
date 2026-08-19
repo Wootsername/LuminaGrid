@@ -17,8 +17,7 @@
     <!-- Top bar -->
     <div class="topbar">
       <div class="brand">
-        <span class="dot"></span>
-        LuminaGrid
+        <img src="assets/logo2.png" alt="LuminaGrid">
       </div>
       <div class="nav-links" id="navLinks">
         <a href="fault-records.html" data-roles="admin,electrician"><span class="nav-icon">📋</span> History</a>
@@ -37,27 +36,27 @@
       </div>
     </div>
 
-    <div class="page-wrap">
+    <div class="page-wrap reports-page">
 
       <!-- Page Header matching Figure 28 -->
-      <div class="page-header">
-        <div style="display:flex; align-items:center; gap:16px;">
+      <div class="page-header reports-controls">
+        <div class="reports-controls-left" style="display:flex; align-items:center; gap:16px;">
           <h2 style="font-size:1.5rem; font-weight:800; color:var(--navy-900); letter-spacing:0.5px;">REPORTS</h2>
           <div style="position:relative; width:260px;">
-            <input type="text" placeholder="📅 Select date range..."
+            <input class="reports-date-input" type="text" placeholder="Select date range..."
               style="width:100%; padding:8px 12px; border-radius:20px; border:1px solid var(--gray-300); font-size:0.82rem; background:var(--white);">
           </div>
         </div>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <select id="timeframeSelect"
+        <div class="reports-controls-right" style="display:flex; gap:10px; align-items:center;">
+          <select class="reports-date-select" id="timeframeSelect"
             style="padding:8px 16px; border-radius:20px; border:1px solid var(--gray-300); background:var(--white); font-weight:500; font-size:0.82rem;">
-            <option value="monthly">📅 Date</option>
+            <option value="monthly">Date</option>
             <option value="daily">Daily View</option>
             <option value="weekly">Weekly View</option>
           </select>
-          <button class="btn btn-amber" id="exportBtn"
+          <button class="btn btn-amber reports-export-btn" id="exportBtn"
             style="width:auto; padding:8px 20px; border-radius:20px; font-weight:600; gap:6px;">
-            📤 Export
+            Export
           </button>
         </div>
       </div>
@@ -66,40 +65,39 @@
       <div class="reports-grid">
 
         <!-- Column 1: Bar Chart -->
-        <div class="report-card" style="display:flex; flex-direction:column; justify-content:space-between;">
-          <div>
-            <h3
-              style="text-align:center; font-size:0.95rem; font-weight:700; color:var(--navy-900); margin-bottom:20px;">
-              MONTHLY COMPARISON<br>ENERGY CONSUMPTION
-            </h3>
-            <div style="position:relative; height:240px; width:100%;">
+        <div class="report-card reports-chart-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+          <div class="reports-card-header">
+            <h3>MONTHLY COMPARISON<br>ENERGY CONSUMPTION</h3>
+          </div>
+          <div class="reports-card-body">
+            <div class="reports-chart-wrap" style="position:relative; height:240px; width:100%;">
               <canvas id="energyChart"></canvas>
             </div>
           </div>
         </div>
 
         <!-- Column 2: Fault Summary -->
-        <div class="report-card" style="display:flex; flex-direction:column;">
-          <h3 style="text-align:center; font-size:0.95rem; font-weight:700; color:var(--navy-900); margin-bottom:28px;">
-            FAULT SUMMARY
-          </h3>
-          <div style="display:flex; flex-direction:column; gap:16px; justify-content:center; flex:1;">
+        <div class="report-card reports-fault-card" style="display:flex; flex-direction:column;">
+          <div class="reports-card-header">
+            <h3>FAULT SUMMARY</h3>
+          </div>
+          <div class="reports-card-body reports-fault-list" style="display:flex; flex-direction:column; gap:16px; justify-content:center; flex:1;">
             <div class="fault-summary-item total">
-              <div class="fault-summary-icon">🚨</div>
+              <div class="fault-summary-icon" aria-label="Total faults"></div>
               <span>Total Faults</span>
               <span style="margin-left:auto; font-family:var(--font-mono); font-size:1.3rem;"
                 id="sumTotalFaults">25</span>
             </div>
 
             <div class="fault-summary-item resolved">
-              <div class="fault-summary-icon">⚙️</div>
+              <div class="fault-summary-icon" aria-label="Resolved faults"></div>
               <span>Resolved</span>
               <span style="margin-left:auto; font-family:var(--font-mono); font-size:1.3rem;"
                 id="sumResolvedFaults">20</span>
             </div>
 
             <div class="fault-summary-item pending">
-              <div class="fault-summary-icon">💬</div>
+              <div class="fault-summary-icon" aria-label="Pending faults"></div>
               <span>Pending</span>
               <span style="margin-left:auto; font-family:var(--font-mono); font-size:1.3rem;"
                 id="sumPendingFaults">20</span>
@@ -109,12 +107,12 @@
 
         <!-- Column 3: Stat Cards -->
         <div style="display:flex; flex-direction:column; gap:14px; justify-content:space-between;">
-          <div class="report-card" style="padding:18px; display:flex; flex-direction:column; justify-content:center;">
+          <div class="report-card reports-metric-card" style="padding:18px; display:flex; flex-direction:column; justify-content:center;">
             <div
               style="font-size:0.75rem; color:var(--gray-400); text-align:center; font-weight:500; margin-bottom:8px;">
               Total Consumption</div>
             <div style="display:flex; align-items:center; justify-content:center; gap:12px;">
-              <div class="energy-stat-icon" style="background:#FFF3E0; color:#F97316; width:44px; height:44px;">⚡</div>
+              <div class="energy-stat-icon metric-consumption" style="background:#FFF3E0; color:#F97316; width:44px; height:44px;">⚡</div>
               <div>
                 <span style="font-family:var(--font-mono); font-size:1.6rem; font-weight:800; color:var(--navy-900);"
                   id="statTotalKwh">163.3</span>
@@ -123,12 +121,12 @@
             </div>
           </div>
 
-          <div class="report-card" style="padding:18px; display:flex; flex-direction:column; justify-content:center;">
+          <div class="report-card reports-metric-card" style="padding:18px; display:flex; flex-direction:column; justify-content:center;">
             <div
               style="font-size:0.75rem; color:var(--gray-400); text-align:center; font-weight:500; margin-bottom:8px;">
               Monthly Cost</div>
             <div style="display:flex; align-items:center; justify-content:center; gap:12px;">
-              <div class="energy-stat-icon"
+              <div class="energy-stat-icon metric-cost"
                 style="background:#E8F5E9; color:#2E7D32; width:44px; height:44px; font-weight:700;">₱</div>
               <div>
                 <span style="font-family:var(--font-mono); font-size:1.6rem; font-weight:800; color:var(--navy-900);"
@@ -137,12 +135,12 @@
             </div>
           </div>
 
-          <div class="report-card" style="padding:18px; display:flex; flex-direction:column; justify-content:center;">
+          <div class="report-card reports-metric-card" style="padding:18px; display:flex; flex-direction:column; justify-content:center;">
             <div
               style="font-size:0.75rem; color:var(--gray-400); text-align:center; font-weight:500; margin-bottom:8px;">
               Average/Node</div>
             <div style="display:flex; align-items:center; justify-content:center; gap:12px;">
-              <div class="energy-stat-icon" style="background:#FFF8E1; color:#F5A623; width:44px; height:44px;">💡</div>
+              <div class="energy-stat-icon metric-average" style="background:#FFF8E1; color:#F5A623; width:44px; height:44px;">💡</div>
               <div>
                 <span style="font-family:var(--font-mono); font-size:1.6rem; font-weight:800; color:var(--navy-900);"
                   id="statAvgNode">41.1</span>

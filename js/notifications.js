@@ -44,15 +44,15 @@ function renderRows(rows) {
 
   tbody.innerHTML = rows.map(({ notification: n, node, resolved }) => `
     <tr id="notif-${n.notification_id}">
-      <td class="notif-status-icon" data-label="">${resolved ? '<span class="icon-ok">✅</span>' : '<span class="icon-warn">⚠️</span>'}</td>
+      <td class="notif-status-icon" data-label="">${resolved ? '<span class="icon-ok" aria-label="Resolved"></span>' : '<span class="icon-warn" aria-label="Unresolved"></span>'}</td>
       <td data-label="Date">${formatNotifDate(n.sent_at)}</td>
       <td data-label="Node ID">${node ? node.node_id : '—'}</td>
       <td data-label="Pole ID">${node ? node.pole_number : '—'}</td>
       <td class="notif-addr-cell" data-label="Address">${node ? node.location : (n.message || '—')}</td>
       <td data-label="Action">
         <div class="notif-action-cell">
-          <button class="notif-view-btn" onclick="viewNotification('${n.notification_id}')">👁 View</button>
-          <span class="notif-status-btn ${resolved ? 'resolved' : 'unresolved'}">${resolved ? '✓ Resolved' : '✕ Unresolved'}</span>
+          <button class="notif-view-btn" onclick="viewNotification('${n.notification_id}')">View</button>
+          <span class="notif-status-btn ${resolved ? 'resolved' : 'unresolved'}">${resolved ? 'Resolved' : 'Unresolved'}</span>
         </div>
       </td>
     </tr>

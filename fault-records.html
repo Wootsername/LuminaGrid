@@ -17,8 +17,7 @@
     <!-- Top bar -->
     <div class="topbar">
       <div class="brand">
-        <span class="dot"></span>
-        LuminaGrid
+        <img src="assets/logo2.png" alt="LuminaGrid">
       </div>
       <div class="nav-links" id="navLinks">
         <a href="fault-records.html" class="active" data-roles="admin,electrician"><span class="nav-icon">📋</span>
@@ -37,21 +36,29 @@
       </div>
     </div>
 
-    <div class="page-wrap">
+    <div class="page-wrap history-page">
       <div class="page-header">
         <div>
-          <h2>Fault Detection & History Records</h2>
+          <h2>Fault Detection & History Log</h2>
           <p class="subtitle">Full history of detected faults across Barangay Guadalupe monitoring nodes.</p>
         </div>
-        <select id="statusFilter"
-          style="padding:8px 14px; border-radius:var(--radius-xs); border:1px solid var(--gray-300); font-family:var(--font-ui); background:var(--white);">
-          <option value="">All Statuses</option>
-          <option value="Pending">Pending</option>
-          <option value="Resolved">Resolved</option>
-        </select>
       </div>
 
-      <div class="card">
+      <div class="card history-table-card">
+        <div class="history-card-header">
+          <h3>Fault Detection & History Log</h3>
+        </div>
+        <div class="history-toolbar">
+          <label class="history-search-wrap">
+            <span class="history-search-icon" aria-hidden="true"></span>
+            <input type="search" id="faultSearch" placeholder="Search fault, node, or pole..." aria-label="Search fault records">
+          </label>
+          <select id="statusFilter" aria-label="Filter fault status">
+            <option value="">All Statuses</option>
+            <option value="Pending">Pending</option>
+            <option value="Resolved">Resolved</option>
+          </select>
+        </div>
         <table class="data-table">
           <thead>
             <tr>

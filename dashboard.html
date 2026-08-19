@@ -18,8 +18,7 @@
     <!-- Top navigation bar -->
     <div class="topbar">
       <div class="brand">
-        <span class="dot"></span>
-        LuminaGrid
+        <img src="assets/logo2.png" alt="LuminaGrid">
       </div>
       <div class="nav-links" id="navLinks">
         <a href="fault-records.html" data-roles="admin,electrician"><span class="nav-icon">📋</span> History</a>
@@ -91,7 +90,7 @@
         <div id="nodeListView">
           <div class="side-panel-header">
             <h3>Streetlight Nodes</h3>
-            <button class="btn-simulate" id="simulateFaultsBtn">⚡ Simulate Faults</button>
+            <button class="btn-simulate" id="simulateFaultsBtn">Simulate Faults</button>
           </div>
           <div class="node-list" id="nodeList">
             <div class="empty-state"><strong>Loading...</strong></div>
@@ -101,13 +100,15 @@
         <!-- Node detail view (shown when a node is selected) -->
         <div id="nodeDetailView" class="node-detail">
           <div class="node-detail-header">
-            <div>
-              <h3 id="detailNodeId">—</h3>
-              <span class="status-pill" id="detailStatus">—</span>
+            <div class="node-detail-header-content">
+              <div class="node-detail-title-row">
+                <h3 id="detailNodeId">—</h3>
+                <span class="status-pill" id="detailStatus">—</span>
+              </div>
+              <p class="node-detail-location" id="detailLocation">—</p>
             </div>
             <button class="close-detail" id="closeDetailBtn">✕</button>
           </div>
-          <p class="node-detail-location" id="detailLocation">—</p>
 
           <div class="sensor-grid">
             <div class="sensor-item">
@@ -160,8 +161,8 @@
           </table>
 
           <div class="node-detail-actions">
-            <button class="btn-locate" id="locateOnMapBtn">📍 Locate on Map</button>
-            <button class="btn-resolve-fault" id="resolveFaultBtn" style="display:none;">🔧 Resolve Fault</button>
+            <button class="btn-locate" id="locateOnMapBtn">Locate on Map</button>
+            <button class="btn-resolve-fault" id="resolveFaultBtn" style="display:none;">Resolve Fault</button>
           </div>
         </div>
       </div>

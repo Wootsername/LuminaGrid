@@ -60,15 +60,19 @@ function makeDotIcon(status) {
 async function popupHtml(node) {
   const reading = await DataService.getLatestReading(node.streetlight_id);
   return `
-    <div class="node-popup">
-      <h4>${node.node_id || node.pole_number}</h4>
-      <span class="status-pill ${statusPillClass(node.status)}">${statusLabel(node.status)}</span>
-      <div class="popup-row"><span>Location</span><span>${node.location || node.barangay}</span></div>
+    <div class="node-popup status-${statusPillClass(node.status)}">
+      <div class="node-popup-header">
+        <h4>${node.node_id || node.pole_number}</h4>
+        <span class="status-pill ${statusPillClass(node.status)}">${statusLabel(node.status)}</span>
+      </div>
+      <div class="node-popup-body">
+        <div class="popup-row"><span>Location</span><span>${node.location || node.barangay}</span></div>
       <div class="popup-row"><span>Current</span><span>${reading ? reading.current.toFixed(2) + " A" : "—"}</span></div>
       <div class="popup-row"><span>Voltage</span><span>${reading ? reading.voltage.toFixed(1) + " V" : "—"}</span></div>
       <div class="popup-row"><span>Ambient</span><span>${reading ? reading.ambient_light.toFixed(1) + " lx" : "—"}</span></div>
       <div style="margin-top:8px;">
         <button onclick="showNodeDetail('${node.streetlight_id}')" style="background:var(--amber);color:var(--navy-900);border:none;padding:5px 10px;border-radius:6px;font-weight:600;cursor:pointer;font-family:var(--font-ui);font-size:0.78rem;">View Details</button>
+      </div>
       </div>
     </div>
   `;
@@ -118,11 +122,15 @@ async function renderNodeList() {
   listEl.innerHTML = nodes.map(node => `
     <div class="node-card ${selectedNodeId === node.streetlight_id ? 'selected' : ''}" 
          onclick="showNodeDetail('${node.streetlight_id}')" id="nodeCard-${node.streetlight_id}">
-      <div class="node-card-info">
-        <h4>${node.node_id || node.pole_number}</h4>
-        <p>${node.pole_number} ${node.location || node.barangay}</p>
+      <div class="node-card-header">
+        <span class="node-status-dot status-dot-${statusPillClass(node.status)}" aria-hidden="true"></span>
+        <div class="node-card-info">
+          <h4>${node.node_id || node.pole_number}</h4>
+          <p class="node-card-location">${node.pole_number} ${node.location || node.barangay}</p>
+        </div>
+        <span class="status-pill ${statusPillClass(node.status)}">${statusLabel(node.status)}</span>
       </div>
-      <span class="status-pill ${statusPillClass(node.status)}">${statusLabel(node.status)}</span>
+      <div class="node-card-body"></div>
     </div>
   `).join("");
 }
@@ -138,7 +146,9 @@ async function showNodeDetail(streetlightId) {
   // Show detail view, hide list view
   document.getElementById("nodeListView").style.display = "none";
   document.getElementById("nodeDetailView").style.display = "block";
-  document.getElementById("nodeDetailView").classList.add("visible");
+  const detailView = document.getElementById("nodeDetailView");
+  detailView.classList.remove("visible", "status-active", "status-faulty", "status-offline");
+  detailView.classList.add("visible", `status-${statusPillClass(node.status)}`);
 
   // Populate header
   document.getElementById("detailNodeId").textContent = node.node_id || node.pole_number;

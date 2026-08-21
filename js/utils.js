@@ -31,17 +31,17 @@ function formatInitials(name) {
   return initials || "—";
 }
 
-const globalNavRoutes = Object.freeze([
-  { label: "Dashboard", href: "dashboard.html", roles: ["admin", "electrician", "finance"], icon: "dashboard" },
-  { label: "Energy", href: "energy_data.html", roles: ["admin", "finance"], icon: "energy" },
-  { label: "Notification", href: "notifications.html", roles: ["admin", "electrician", "finance"], icon: "notification" },
-  { label: "Report", href: "energy-analytics.html", roles: ["admin", "finance"], icon: "report" },
-  { label: "History", href: "fault-records.html", roles: ["admin", "electrician"], icon: "history" },
-  { label: "Admin", href: "node-management.html", roles: ["admin"], icon: "admin", activeRoutes: ["node-management.html", "user-management.html", "system-logs.html"] }
-].map((route) => Object.freeze({
-  ...route,
-  roles: Object.freeze([...route.roles]),
-  activeRoutes: route.activeRoutes ? Object.freeze([...route.activeRoutes]) : undefined
+const NAV_ITEMS = Object.freeze([
+  { label: "Dashboard", path: "dashboard.html", roles: ["admin", "electrician", "finance"], icon: "dashboard" },
+  { label: "Energy", path: "energy_data.html", roles: ["admin", "finance"], icon: "energy" },
+  { label: "Notification", path: "notifications.html", roles: ["admin", "electrician", "finance"], icon: "notification" },
+  { label: "Report", path: "energy-analytics.html", roles: ["admin", "finance"], icon: "report" },
+  { label: "History", path: "fault-records.html", roles: ["admin", "electrician"], icon: "history" },
+  { label: "Admin", path: "node-management.html", roles: ["admin"], icon: "admin", activePaths: ["node-management.html", "user-management.html", "system-logs.html"] }
+].map((item) => Object.freeze({
+  ...item,
+  roles: Object.freeze([...item.roles]),
+  activePaths: item.activePaths ? Object.freeze([...item.activePaths]) : undefined
 })));
 
 function currentRouteName() {
@@ -62,11 +62,11 @@ function renderGlobalNav() {
   if (!nav || !role) return;
 
   const currentRoute = currentRouteName();
-  nav.innerHTML = globalNavRoutes.map((route) => {
-    const visible = role === "admin" || route.roles.includes(role);
-    const active = route.href === currentRoute || (route.activeRoutes || []).includes(currentRoute);
-    return `<a href="${route.href}" class="${active ? "active" : ""}" data-roles="${route.roles.join(",")}" data-nav-icon="${route.icon}"${active ? ' aria-current="page"' : ""}${visible ? "" : " hidden"}>
-      <span class="nav-icon" aria-hidden="true"></span>${route.label}
+  nav.innerHTML = NAV_ITEMS.map((item) => {
+    const visible = role === "admin" || item.roles.includes(role);
+    const active = currentRoute === item.path || (item.activePaths || []).includes(currentRoute);
+    return `<a href="${item.path}" class="${active ? "active" : ""}" data-roles="${item.roles.join(",")}" data-nav-icon="${item.icon}"${active ? ' aria-current="page"' : ""}${visible ? "" : " hidden"}>
+      <span class="nav-icon" aria-hidden="true"></span>${item.label}
     </a>`;
   }).join("");
 }

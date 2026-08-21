@@ -6416,8 +6416,10 @@ select:focus-visible {
 
 .sidebar .brand img {
   width: auto;
-  height: 180px;
+  height: 50px;
   object-fit: contain;
+  margin-top: 12px;
+  margin-bottom: 20px;
 }
 
 .sidebar .nav-links {
@@ -6437,7 +6439,7 @@ select:focus-visible {
   min-height: 48px;
   padding: 12px 16px;
   border-radius: 8px;
-  color: rgba(255, 255, 255, 0.82);
+  color: #FFFFFF;
   font-size: 1rem;
   font-weight: 500;
   white-space: nowrap;
@@ -6460,8 +6462,17 @@ select:focus-visible {
 
 .sidebar .nav-links a.active {
   background: #eab308;
-  color: var(--navy-900);
-  font-weight: 700;
+  color: #0F172A;
+}
+
+.sidebar .nav-links a.active .nav-icon {
+  background-color: #020617;
+  color: #020617;
+}
+
+.sidebar .nav-links a:not(.active) .nav-icon {
+  background-color: #FFFFFF;
+  color: #FFFFFF;
 }
 
 .sidebar .nav-links a[hidden] {

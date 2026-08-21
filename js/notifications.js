@@ -5,6 +5,7 @@
 const currentRole = requireRole(["admin", "electrician", "finance"]);
 paintUserChip();
 wireLogout();
+gateNavByRole(currentRole);
 
 const notifModal = document.getElementById("notifModal");
 

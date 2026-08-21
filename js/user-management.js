@@ -3,9 +3,10 @@
 // Account Management (Create, Update, Deactivate, Role Mgmt)
 // ============================================================
 
-requireRole(["admin"]);
+const currentRole = requireRole(["admin"]);
 paintUserChip();
 wireLogout();
+gateNavByRole(currentRole);
 
 async function renderUsers() {
   const users = await DataService.getUsers();

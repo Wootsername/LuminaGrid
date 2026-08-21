@@ -7,8 +7,11 @@
 const currentRole = requireRole(["admin", "finance"]);
 paintUserChip();
 wireLogout();
+gateNavByRole(currentRole);
 
 let energyChart;
+let selectedExportFormat = "spreadsheet";
+let selectedTimeframe = "monthly";
 
 function initChart() {
   const ctx = document.getElementById("energyChart").getContext("2d");
@@ -79,23 +82,75 @@ async function loadReportData() {
   document.getElementById("statAvgNode").textContent = "41.1";
 }
 
-document.getElementById("exportBtn").addEventListener("click", async () => {
+const exportModal = document.getElementById("exportModal");
+const modalReportType = document.getElementById("modalReportType");
+const timeframeButtons = document.querySelectorAll(".segmented-option");
+
+function closeExportModal() {
+  exportModal.classList.remove("open");
+}
+
+document.getElementById("exportBtn").addEventListener("click", () => exportModal.classList.add("open"));
+document.getElementById("closeExportModal").addEventListener("click", closeExportModal);
+const cancelExportBtn = document.getElementById("cancelExport");
+if (cancelExportBtn) {
+  cancelExportBtn.addEventListener("click", closeExportModal);
+}
+exportModal.addEventListener("click", (event) => {
+  if (event.target === exportModal) closeExportModal();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") closeExportModal();
+});
+
+timeframeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    selectedTimeframe = button.dataset.view;
+    timeframeButtons.forEach((item) => item.classList.toggle("selected", item === button));
+  });
+});
+
+document.querySelectorAll(".export-format-card").forEach((card) => {
+  card.addEventListener("click", () => {
+    selectedExportFormat = card.dataset.format;
+    document.querySelectorAll(".export-format-card").forEach((item) => item.classList.toggle("selected", item === card));
+  });
+});
+
+document.getElementById("downloadReport").addEventListener("click", async () => {
   const readings = await DataService.getAllReadings();
   if (readings.length === 0) {
     alert("No data available to export.");
     return;
   }
-  const header = "reading_id,streetlight_id,current,voltage,ambient_light,power_consumption,light_status,timestamp\n";
+
+  const categoryText = modalReportType?.selectedOptions?.[0]?.text || "All Metrics";
+  const timeframeLabel = selectedTimeframe.charAt(0).toUpperCase() + selectedTimeframe.slice(1);
+  const filePrefix = `${categoryText.replace(/\s+/g, "-").toLowerCase()}-${selectedTimeframe}`;
+  const header = `LuminaGrid Report,${categoryText},${timeframeLabel}\nreading_id,streetlight_id,current,voltage,ambient_light,power_consumption,light_status,timestamp\n`;
   const body = readings
     .map(r => `${r.reading_id},${r.streetlight_id},${r.current},${r.voltage},${r.ambient_light},${r.power_consumption},${r.light_status},${r.timestamp}`)
     .join("\n");
-  const blob = new Blob([header + body], { type: "text/csv" });
+  const content = selectedExportFormat === "spreadsheet"
+    ? header + body
+    : `<html><body><h1>LuminaGrid Report</h1><p>${categoryText} | ${timeframeLabel}</p><pre>${header + body}</pre></body></html>`;
+  const extensions = { spreadsheet: "csv", pdf: "pdf", docx: "docx" };
+  const types = { spreadsheet: "text/csv", pdf: "application/pdf", docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" };
+  const blob = new Blob([content], { type: types[selectedExportFormat] });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = `luminagrid_reports_${new Date().toISOString().slice(0, 10)}.csv`;
+  a.download = `${filePrefix}_${new Date().toISOString().slice(0, 10)}.${extensions[selectedExportFormat]}`;
   a.click();
   URL.revokeObjectURL(url);
+  closeExportModal();
+});
+
+document.querySelectorAll(".pagination-pages button:not(.pagination-arrow)").forEach((button) => {
+  button.addEventListener("click", () => {
+    document.querySelectorAll(".pagination-pages button").forEach((item) => item.classList.remove("active"));
+    button.classList.add("active");
+  });
 });
 
 initChart();

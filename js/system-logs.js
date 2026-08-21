@@ -2,9 +2,10 @@
 // LuminaGrid — System Logs
 // ============================================================
 
-requireRole(["admin"]);
+const currentRole = requireRole(["admin"]);
 paintUserChip();
 wireLogout();
+gateNavByRole(currentRole);
 
 async function renderLogs() {
   const reports = await DataService.getFaultReports();

@@ -2,9 +2,10 @@
 // LuminaGrid — Node Management
 // ============================================================
 
-requireRole(["admin"]);
+const currentRole = requireRole(["admin"]);
 paintUserChip();
 wireLogout();
+gateNavByRole(currentRole);
 
 async function renderNodeTable() {
   const nodes = await DataService.getStreetlights();

@@ -26,8 +26,8 @@
         <a href="notifications.html" data-roles="admin,electrician,finance"><span class="nav-icon">🔔</span>
           Notification</a>
         <a href="energy_data.html" data-roles="admin,finance"><span class="nav-icon">⚡</span> Energy</a>
-        <a href="dashboard.html"><span class="nav-icon">📍</span> Dashboard</a>
-        <a href="node-management.html" data-roles="admin"><span class="nav-icon">⚙️</span> Admin</a>
+        <a href="dashboard.html" data-roles="admin,electrician,finance"><span class="nav-icon">📍</span> Dashboard</a>
+        <a href="node-management.html" data-roles="admin"><span class="nav-icon" aria-hidden="true"></span> Admin</a>
       </div>
       <div class="user-chip">
         <span id="userName">—</span>
@@ -40,24 +40,11 @@
 
       <!-- Page Header matching Figure 28 -->
       <div class="page-header reports-controls">
-        <div class="reports-controls-left" style="display:flex; align-items:center; gap:16px;">
-          <h2 style="font-size:1.5rem; font-weight:800; color:var(--navy-900); letter-spacing:0.5px;">REPORTS</h2>
-          <div style="position:relative; width:260px;">
-            <input class="reports-date-input" type="text" placeholder="Select date range..."
-              style="width:100%; padding:8px 12px; border-radius:20px; border:1px solid var(--gray-300); font-size:0.82rem; background:var(--white);">
-          </div>
+        <div class="reports-controls-left">
+          <h2>REPORTS</h2>
         </div>
-        <div class="reports-controls-right" style="display:flex; gap:10px; align-items:center;">
-          <select class="reports-date-select" id="timeframeSelect"
-            style="padding:8px 16px; border-radius:20px; border:1px solid var(--gray-300); background:var(--white); font-weight:500; font-size:0.82rem;">
-            <option value="monthly">Date</option>
-            <option value="daily">Daily View</option>
-            <option value="weekly">Weekly View</option>
-          </select>
-          <button class="btn btn-amber reports-export-btn" id="exportBtn"
-            style="width:auto; padding:8px 20px; border-radius:20px; font-weight:600; gap:6px;">
-            Export
-          </button>
+        <div class="reports-controls-right">
+          <button class="btn btn-amber reports-export-btn" id="exportBtn" type="button">Filter &amp; Export</button>
         </div>
       </div>
 
@@ -65,7 +52,8 @@
       <div class="reports-grid">
 
         <!-- Column 1: Bar Chart -->
-        <div class="report-card reports-chart-card" style="display:flex; flex-direction:column; justify-content:space-between;">
+        <div class="report-card reports-chart-card"
+          style="display:flex; flex-direction:column; justify-content:space-between;">
           <div class="reports-card-header">
             <h3>MONTHLY COMPARISON<br>ENERGY CONSUMPTION</h3>
           </div>
@@ -81,7 +69,8 @@
           <div class="reports-card-header">
             <h3>FAULT SUMMARY</h3>
           </div>
-          <div class="reports-card-body reports-fault-list" style="display:flex; flex-direction:column; gap:16px; justify-content:center; flex:1;">
+          <div class="reports-card-body reports-fault-list"
+            style="display:flex; flex-direction:column; gap:16px; justify-content:center; flex:1;">
             <div class="fault-summary-item total">
               <div class="fault-summary-icon" aria-label="Total faults"></div>
               <span>Total Faults</span>
@@ -107,12 +96,14 @@
 
         <!-- Column 3: Stat Cards -->
         <div style="display:flex; flex-direction:column; gap:14px; justify-content:space-between;">
-          <div class="report-card reports-metric-card" style="padding:18px; display:flex; flex-direction:column; justify-content:center;">
+          <div class="report-card reports-metric-card"
+            style="padding:18px; display:flex; flex-direction:column; justify-content:center;">
             <div
               style="font-size:0.75rem; color:var(--gray-400); text-align:center; font-weight:500; margin-bottom:8px;">
               Total Consumption</div>
             <div style="display:flex; align-items:center; justify-content:center; gap:12px;">
-              <div class="energy-stat-icon metric-consumption" style="background:#FFF3E0; color:#F97316; width:44px; height:44px;">⚡</div>
+              <div class="energy-stat-icon metric-consumption"
+                style="background:#FFF3E0; color:#F97316; width:44px; height:44px;">⚡</div>
               <div>
                 <span style="font-family:var(--font-mono); font-size:1.6rem; font-weight:800; color:var(--navy-900);"
                   id="statTotalKwh">163.3</span>
@@ -121,7 +112,8 @@
             </div>
           </div>
 
-          <div class="report-card reports-metric-card" style="padding:18px; display:flex; flex-direction:column; justify-content:center;">
+          <div class="report-card reports-metric-card"
+            style="padding:18px; display:flex; flex-direction:column; justify-content:center;">
             <div
               style="font-size:0.75rem; color:var(--gray-400); text-align:center; font-weight:500; margin-bottom:8px;">
               Monthly Cost</div>
@@ -135,12 +127,14 @@
             </div>
           </div>
 
-          <div class="report-card reports-metric-card" style="padding:18px; display:flex; flex-direction:column; justify-content:center;">
+          <div class="report-card reports-metric-card"
+            style="padding:18px; display:flex; flex-direction:column; justify-content:center;">
             <div
               style="font-size:0.75rem; color:var(--gray-400); text-align:center; font-weight:500; margin-bottom:8px;">
               Average/Node</div>
             <div style="display:flex; align-items:center; justify-content:center; gap:12px;">
-              <div class="energy-stat-icon metric-average" style="background:#FFF8E1; color:#F5A623; width:44px; height:44px;">💡</div>
+              <div class="energy-stat-icon metric-average"
+                style="background:#FFF8E1; color:#F5A623; width:44px; height:44px;">💡</div>
               <div>
                 <span style="font-family:var(--font-mono); font-size:1.6rem; font-weight:800; color:var(--navy-900);"
                   id="statAvgNode">41.1</span>
@@ -153,28 +147,80 @@
       </div>
 
       <!-- Pagination bar matching Figure 28 -->
-      <div class="pagination-bar"
-        style="margin-top:12px; background:var(--white); padding:12px 20px; border-radius:var(--radius); box-shadow:var(--shadow-card);">
-        <div style="display:flex; align-items:center; gap:8px;">
-          <span>Rows per page</span>
-          <select style="border-radius:20px; padding:4px 12px; border:1px solid var(--gray-300);">
-            <option>10</option>
-            <option>25</option>
+      <div class="pagination-bar reports-pagination">
+        <div class="reports-rows-control">
+          <span>Rows per page:</span>
+          <select id="rowsPerPage" aria-label="Rows per page">
+            <option selected>10</option>
+            <option>20</option>
             <option>50</option>
           </select>
-          <span style="margin-left:8px;">of 50 rows</span>
         </div>
-
-        <div class="pagination-pages" style="align-items:center; gap:8px;">
-          <span style="margin-right:12px;">Rows per page</span>
-          <button style="border:none; background:none; cursor:pointer;">‹</button>
-          <button class="active">1</button>
-          <button>2</button>
-          <button>3</button>
-          <button style="border:none; background:none; cursor:pointer;">›</button>
+        <div class="reports-pagination-summary">1 - 10 of 50 items</div>
+        <div class="pagination-pages" aria-label="Report pages">
+          <button class="pagination-arrow" type="button" aria-label="Previous page">&lsaquo;</button>
+          <button class="active" type="button">1</button>
+          <button type="button">2</button>
+          <button type="button">3</button>
+          <button class="pagination-arrow" type="button" aria-label="Next page">&rsaquo;</button>
         </div>
       </div>
 
+    </div>
+
+    <div class="modal-backdrop export-modal" id="exportModal" role="presentation">
+      <div class="card export-dialog" role="dialog" aria-modal="true" aria-labelledby="exportTitle">
+        <div class="export-dialog-header">
+          <h2 id="exportTitle">Filter &amp; Export Report</h2>
+          <button class="modal-close" id="closeExportModal" type="button" aria-label="Close export dialog">&times;</button>
+        </div>
+
+        <div class="export-dialog-body">
+          <div class="filter-step">
+            <label class="modal-field" for="modalReportType">
+              <span>Filter by data type</span>
+              <select id="modalReportType" aria-label="Choose report type">
+                <option value="all">All Metrics</option>
+                <option value="energy">Energy Consumption</option>
+                <option value="faults">Fault Logs</option>
+                <option value="telemetry">Streetlight Telemetry</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="filter-step">
+            <span>View</span>
+            <div class="segmented-options" aria-label="Choose time frame">
+              <button class="segmented-option" type="button" data-view="daily">Daily View</button>
+              <button class="segmented-option selected" type="button" data-view="monthly">Monthly View</button>
+              <button class="segmented-option" type="button" data-view="yearly">Yearly View</button>
+            </div>
+          </div>
+
+          <div class="filter-step">
+            <span>Export as</span>
+            <div class="export-format-list">
+              <button class="export-format-card selected" type="button" data-format="spreadsheet">
+                <span class="format-icon spreadsheet-icon">XLS</span>
+                <span><strong>Spreadsheet (.CSV / .XLSX)</strong><small>Best for raw data analysis</small></span>
+              </button>
+              <button class="export-format-card" type="button" data-format="pdf">
+                <span class="format-icon pdf-icon">PDF</span>
+                <span><strong>PDF (.PDF)</strong><small>Best for print and sharing</small></span>
+              </button>
+              <button class="export-format-card" type="button" data-format="docx">
+                <span class="format-icon docx-icon">W</span>
+                <span><strong>Word (.DOCX)</strong><small>Best for editable summaries</small></span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="export-dialog-footer">
+          <button class="export-cancel" id="cancelExport" type="button">Cancel</button>
+          <button class="export-download" id="downloadReport" type="button">Generate &amp; Export</button>
+        </div>
+      </div>
     </div>
 
   </div>

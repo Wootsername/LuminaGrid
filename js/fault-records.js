@@ -5,6 +5,7 @@
 const currentRole = requireRole(["admin", "electrician"]);
 paintUserChip();
 wireLogout();
+gateNavByRole(currentRole);
 
 async function renderFaultTable() {
   const statusFilter = document.getElementById("statusFilter").value;

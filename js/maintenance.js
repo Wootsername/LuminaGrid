@@ -6,6 +6,7 @@
 const currentRole = requireRole(["admin", "electrician"]);
 paintUserChip();
 wireLogout();
+gateNavByRole(currentRole);
 
 async function loadMaintenanceData() {
   const records = await DataService.getMaintenanceRecords();

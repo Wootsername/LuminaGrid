@@ -11,13 +11,6 @@ paintUserChip();
 wireLogout();
 gateNavByRole(currentRole);
 
-function gateNavByRole(role) {
-  document.querySelectorAll("#navLinks a[data-roles]").forEach((link) => {
-    const allowed = link.dataset.roles.split(",");
-    if (!allowed.includes(role)) link.style.display = "none";
-  });
-}
-
 // ---------- Map init ----------
 const map = L.map("map").setView([10.3070, 123.8890], 17);
 
@@ -45,7 +38,7 @@ function statusPillClass(status) {
 function statusLabel(status) {
   if (status === "Faulty") return "FAULT";
   if (status === "Offline") return "OFFLINE";
-  return "OK";
+  return "ONLINE";
 }
 
 function makeDotIcon(status) {
@@ -153,7 +146,7 @@ async function showNodeDetail(streetlightId) {
   // Populate header
   document.getElementById("detailNodeId").textContent = node.node_id || node.pole_number;
   const statusEl = document.getElementById("detailStatus");
-  statusEl.textContent = statusLabel(node.status);
+  statusEl.textContent = `● ${statusLabel(node.status)}`;
   statusEl.className = "status-pill " + statusPillClass(node.status);
 
   document.getElementById("detailLocation").textContent = node.location || node.barangay;

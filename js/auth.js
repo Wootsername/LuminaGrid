@@ -47,8 +47,14 @@ if (loginForm) {
         throw new Error("invalid");
       }
 
+      const fullName = user.first_name + " " + user.last_name;
+      const initials = fullName.toLowerCase() === "juan dela cruz"
+        ? "JDL"
+        : fullName.split(/\s+/).filter(Boolean).slice(0, 3).map(part => part.charAt(0).toUpperCase()).join("");
+
       sessionStorage.setItem("luminagrid_role", user.role);
-      sessionStorage.setItem("luminagrid_name", user.first_name + " " + user.last_name);
+      sessionStorage.setItem("luminagrid_name", fullName);
+      sessionStorage.setItem("luminagrid_initials", initials);
       sessionStorage.setItem("luminagrid_user_id", user.user_id);
 
       window.location.href = "dashboard.html";

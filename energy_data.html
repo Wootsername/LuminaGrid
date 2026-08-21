@@ -123,8 +123,8 @@
           Notification</a>
         <a href="energy_data.html" class="active" data-roles="admin,finance"><span class="nav-icon">⚡</span>
           Energy</a>
-        <a href="dashboard.html"><span class="nav-icon">📍</span> Dashboard</a>
-        <a href="node-management.html" data-roles="admin"><span class="nav-icon">⚙️</span> Admin</a>
+        <a href="dashboard.html" data-roles="admin,electrician,finance"><span class="nav-icon">📍</span> Dashboard</a>
+        <a href="node-management.html" data-roles="admin"><span class="nav-icon" aria-hidden="true"></span> Admin</a>
       </div>
       <div class="user-chip">
         <span id="userName">—</span>
@@ -142,8 +142,9 @@
           <p class="subtitle">Consumption, active status, and estimated cost across all monitoring nodes —
             Guadalupe, Cebu City</p>
         </div>
-        <div style="font-size:0.82rem; color:var(--gray-400);">
-          Billing period: <strong style="color:var(--gray-900);" id="billingPeriod">August 2026</strong>
+        <div class="billing-period" aria-label="Current billing period">
+          <span class="billing-period-label">Billing period</span>
+          <span class="billing-period-value" id="billingPeriod">August 2026</span>
         </div>
       </div>
 

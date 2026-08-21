@@ -12,10 +12,10 @@
 
 <body>
 
-  <div class="app-shell">
+  <div class="app-shell notification-shell">
 
-    <!-- Top bar -->
-    <div class="topbar">
+    <!-- Persistent application sidebar -->
+    <aside class="sidebar" aria-label="Primary navigation">
       <div class="brand">
         <img src="assets/logo2.png" alt="LuminaGrid">
       </div>
@@ -29,15 +29,21 @@
         <a href="node-management.html" data-roles="admin"><span class="nav-icon" aria-hidden="true"></span> Admin</a>
       </div>
       <div class="user-chip">
-        <span id="userName">—</span>
-        <span class="role-badge" id="userRole">—</span>
-        <button class="logout-btn" id="logoutLink">🚪 logout</button>
+        <div class="user-profile">
+          <span class="user-avatar" aria-hidden="true">JDL</span>
+          <div class="user-profile-copy">
+            <span id="userName">—</span>
+            <span class="role-badge" id="userRole">—</span>
+          </div>
+        </div>
+        <button class="logout-btn" id="logoutLink"><span class="logout-icon" aria-hidden="true"></span>Logout</button>
       </div>
-    </div>
+    </aside>
 
-    <div class="page-wrap">
+    <main class="app-content">
+    <div class="page-wrap notification-page">
 
-      <div class="page-header">
+      <div class="page-header page-header-card">
         <div>
           <h2>Notifications & GSM Alerts</h2>
           <p class="subtitle">Real-time alert dispatch log for Barangay Guadalupe control center & automated SMS
@@ -45,25 +51,37 @@
         </div>
       </div>
 
+      <div class="notification-summary-grid" aria-label="Notification summary">
+        <div class="notification-summary-card">
+          <span class="notification-summary-label">Total Notifications</span>
+          <strong id="notifTotalCount">—</strong>
+        </div>
+        <div class="notification-summary-card unread">
+          <span class="notification-summary-label">Unread Alerts</span>
+          <strong id="notifUnreadCount">—</strong>
+        </div>
+        <div class="notification-summary-card resolved">
+          <span class="notification-summary-label">Resolved Alerts</span>
+          <strong id="notifResolvedCount">—</strong>
+        </div>
+      </div>
+
       <!-- Notifications Panel -->
       <div class="notif-panel">
         <div class="notif-toolbar">
-          <div class="notif-bell-wrap">
-            <button class="notif-bell-btn" type="button" title="Alerts">🔔</button>
-            <span class="notif-bell-badge" id="notifUnreadBadge" style="display:none;">0</span>
-          </div>
           <div class="notif-search-wrap">
-            <span class="notif-mag">🔍</span>
+            <span class="notif-mag" aria-hidden="true"></span>
             <input type="text" id="notifSearchInput" placeholder="Search by node, pole, or address">
           </div>
           <label class="notif-date-select">
-            📅
+            <span>Filter by date</span>
             <select id="notifDateFilter">
               <option value="">All dates</option>
               <option value="7">Last 7 days</option>
               <option value="30">Last 30 days</option>
             </select>
           </label>
+          <span class="notif-bell-badge" id="notifUnreadBadge" style="display:none;">0 unread</span>
         </div>
 
         <table class="notif-table">
@@ -87,6 +105,8 @@
 
     </div>
 
+    </div>
+
     <!-- Notification Detail Modal -->
     <div class="modal-backdrop" id="notifModal">
       <div class="card" style="max-width:440px;">
@@ -98,6 +118,8 @@
         </div>
       </div>
     </div>
+
+    </main>
 
   </div>
 

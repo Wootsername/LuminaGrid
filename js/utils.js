@@ -31,6 +31,46 @@ function formatInitials(name) {
   return initials || "—";
 }
 
+const globalNavRoutes = Object.freeze([
+  { label: "Dashboard", href: "dashboard.html", roles: ["admin", "electrician", "finance"], icon: "dashboard" },
+  { label: "Energy", href: "energy_data.html", roles: ["admin", "finance"], icon: "energy" },
+  { label: "Notification", href: "notifications.html", roles: ["admin", "electrician", "finance"], icon: "notification" },
+  { label: "Report", href: "energy-analytics.html", roles: ["admin", "finance"], icon: "report" },
+  { label: "History", href: "fault-records.html", roles: ["admin", "electrician"], icon: "history" },
+  { label: "Admin", href: "node-management.html", roles: ["admin"], icon: "admin", activeRoutes: ["node-management.html", "user-management.html", "system-logs.html"] }
+].map((route) => Object.freeze({
+  ...route,
+  roles: Object.freeze([...route.roles]),
+  activeRoutes: route.activeRoutes ? Object.freeze([...route.activeRoutes]) : undefined
+})));
+
+function currentRouteName() {
+  const path = window.location.pathname.replace(/\\/g, "/").split("/").pop() || "dashboard.html";
+  const routeAliases = {
+    energy: "energy_data.html",
+    report: "energy-analytics.html",
+    notifications: "notifications.html",
+    dashboard: "dashboard.html",
+    admin: "node-management.html"
+  };
+  return routeAliases[path] || path;
+}
+
+function renderGlobalNav() {
+  const nav = document.getElementById("navLinks");
+  const role = sessionStorage.getItem("luminagrid_role");
+  if (!nav || !role) return;
+
+  const currentRoute = currentRouteName();
+  nav.innerHTML = globalNavRoutes.map((route) => {
+    const visible = role === "admin" || route.roles.includes(role);
+    const active = route.href === currentRoute || (route.activeRoutes || []).includes(currentRoute);
+    return `<a href="${route.href}" class="${active ? "active" : ""}" data-roles="${route.roles.join(",")}" data-nav-icon="${route.icon}"${active ? ' aria-current="page"' : ""}${visible ? "" : " hidden"}>
+      <span class="nav-icon" aria-hidden="true"></span>${route.label}
+    </a>`;
+  }).join("");
+}
+
 // Call on every protected page to enforce the Use Case Diagram's
 // access boundaries (e.g. only 'admin' may see Node Management,
 // User Management, Fault Records, System Logs).
@@ -49,6 +89,7 @@ function requireRole(allowedRoles) {
 }
 
 function gateNavByRole(role) {
+  renderGlobalNav();
   document.querySelectorAll("#navLinks a").forEach((link) => {
     const allowed = (link.dataset.roles || "admin,electrician,finance")
       .split(",")
@@ -66,7 +107,7 @@ function paintUserChip() {
   const fullName = sessionStorage.getItem("luminagrid_name") || "";
   const initials = sessionStorage.getItem("luminagrid_initials") || formatInitials(fullName);
 
-  if (nameEl) nameEl.textContent = initials;
+  if (nameEl) nameEl.textContent = fullName || "User";
   if (roleEl) roleEl.textContent = roleLabel(sessionStorage.getItem("luminagrid_role"));
 }
 

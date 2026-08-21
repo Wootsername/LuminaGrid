@@ -118,8 +118,8 @@ async function renderNodeList() {
       <div class="node-card-header">
         <span class="node-status-dot status-dot-${statusPillClass(node.status)}" aria-hidden="true"></span>
         <div class="node-card-info">
-          <h4>${node.node_id || node.pole_number}</h4>
-          <p class="node-card-location">${node.pole_number} ${node.location || node.barangay}</p>
+          <h4>${node.pole_number || node.node_id}</h4>
+          <p class="node-card-location">${node.location || node.barangay}</p>
         </div>
         <span class="status-pill ${statusPillClass(node.status)}">${statusLabel(node.status)}</span>
       </div>

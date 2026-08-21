@@ -63,7 +63,12 @@ function renderRows(rows) {
 function updateUnreadBadge(rows) {
   const badge = document.getElementById("notifUnreadBadge");
   const unreadCount = rows.filter(r => r.notification.status === "Unread").length;
-  badge.textContent = unreadCount;
+  const totalCount = rows.length;
+  const resolvedCount = rows.filter(r => r.resolved).length;
+  document.getElementById("notifTotalCount").textContent = totalCount;
+  document.getElementById("notifUnreadCount").textContent = unreadCount;
+  document.getElementById("notifResolvedCount").textContent = resolvedCount;
+  badge.textContent = `${unreadCount} unread`;
   badge.style.display = unreadCount > 0 ? "flex" : "none";
 }
 

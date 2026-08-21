@@ -14,8 +14,8 @@
 
   <div class="app-shell">
 
-    <!-- Top bar -->
-    <div class="topbar">
+    <!-- Persistent application sidebar -->
+    <aside class="sidebar" aria-label="Primary navigation">
       <div class="brand">
         <img src="assets/logo2.png" alt="LuminaGrid">
       </div>
@@ -29,11 +29,16 @@
         <a href="node-management.html" class="active" data-roles="admin"><span class="nav-icon" aria-hidden="true"></span> Admin</a>
       </div>
       <div class="user-chip">
-        <span id="userName">—</span>
-        <span class="role-badge" id="userRole">—</span>
-        <button class="logout-btn" id="logoutLink">🚪 logout</button>
+        <div class="user-profile">
+          <span class="user-avatar" aria-hidden="true">JDL</span>
+          <div class="user-profile-copy">
+            <span id="userName">—</span>
+            <span class="role-badge" id="userRole">—</span>
+          </div>
+        </div>
+        <button class="logout-btn" id="logoutLink"><span class="logout-icon" aria-hidden="true"></span>Logout</button>
       </div>
-    </div>
+    </aside>
 
     <div class="page-wrap">
       <div class="page-header">

@@ -8,6 +8,7 @@
   <meta name="description"
     content="LuminaGrid System Logs — Chronological event trail and system analytics for monitoring nodes and telemetry">
   <link rel="stylesheet" href="css/style.css">
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body>
@@ -41,11 +42,12 @@
     </aside>
 
     <div class="page-wrap">
-      <div class="page-header">
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 mb-6 flex items-center justify-between">
         <div>
-          <h2>System Logs & Audit Analytics</h2>
+          <h2 class="text-2xl font-bold">System Logs & Audit Analytics</h2>
           <p class="subtitle">Real-time event logs of node heartbeats, fault detections, and system operations.</p>
         </div>
+        <a href="node-management.html" class="flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-slate-700 hover:text-slate-900 bg-slate-50 rounded-xl border border-slate-200">← Back to Admin</a>
       </div>
 
       <!-- Logs Table Card -->

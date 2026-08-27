@@ -104,11 +104,15 @@ function gateNavByRole(role) {
 function paintUserChip() {
   const nameEl = document.getElementById("userName");
   const roleEl = document.getElementById("userRole");
+  const avatarEl = document.querySelector(".user-avatar");
   const fullName = sessionStorage.getItem("luminagrid_name") || "";
   const initials = sessionStorage.getItem("luminagrid_initials") || formatInitials(fullName);
 
   if (nameEl) nameEl.textContent = fullName || "User";
   if (roleEl) roleEl.textContent = roleLabel(sessionStorage.getItem("luminagrid_role"));
+  // Fill the round initials circle with the real logged-in user's initials,
+  // so it matches the name (this also updates live after a profile edit).
+  if (avatarEl) avatarEl.textContent = initials || "—";
 }
 
 function wireLogout() {

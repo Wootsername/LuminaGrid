@@ -6814,3 +6814,88 @@ select:focus-visible {
     max-width: none;
   }
 }
+/* ============================================================
+   USER PROFILE MODAL  (js/profile.js — view & update own account)
+   ============================================================ */
+.profile-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 4px;
+}
+
+.profile-modal-avatar-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 4px 0 18px;
+}
+
+.profile-modal-avatar {
+  display: grid;
+  place-items: center;
+  width: 68px;
+  height: 68px;
+  border-radius: 50%;
+  background: var(--amber);
+  color: var(--navy-900);
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+/* Read-only login / admin-managed fields */
+.field input[readonly] {
+  background: var(--gray-100);
+  color: var(--gray-500);
+  cursor: not-allowed;
+}
+
+.profile-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border: 1px dashed var(--gray-200);
+  border-radius: var(--radius-sm);
+  background: var(--gray-50);
+  font-size: 0.78rem;
+  color: var(--gray-600);
+}
+
+.profile-meta .role-badge {
+  background: var(--gray-200);
+  color: var(--navy-900);
+}
+
+.profile-message {
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  display: none;
+}
+
+.profile-message.success {
+  display: block;
+  background: #E7F6EE;
+  color: #166534;
+  border: 1px solid #BBE7C6;
+}
+
+.profile-message.error {
+  display: block;
+  background: #FDECEC;
+  color: #B91C1C;
+  border: 1px solid #F2C2C2;
+}
+
+.profile-message.info {
+  display: block;
+  background: var(--gray-50);
+  color: var(--gray-600);
+  border: 1px solid var(--gray-200);
+}

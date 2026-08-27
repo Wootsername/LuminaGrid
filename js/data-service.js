@@ -149,6 +149,24 @@ const DataService = (() => {
     return data.users[userId];
   }
 
+  async function getUserById(userId) {
+    const data = await _load();
+    return data.users[userId] || null;
+  }
+
+  // Partial update of an existing user's own profile. Only the caller's own
+  // record should ever be passed here (enforced by js/profile.js using the
+  // user_id stored in sessionStorage at login).
+  // Firebase equivalent:
+  //   db.ref("users/" + userId).update(updates)
+  async function updateUser(userId, updates) {
+    const data = await _load();
+    if (data.users[userId]) {
+      Object.assign(data.users[userId], updates);
+    }
+    return data.users[userId] || null;
+  }
+
   // ---------- Energy aggregation ----------
   async function getTotalKwhToday() {
     const readings = await getAllReadings();
@@ -179,7 +197,7 @@ const DataService = (() => {
     getFaultReports, resolveFaultReport,
     getMaintenanceRecords, addMaintenanceRecord, updateMaintenanceRecord,
     getNotifications, markNotificationRead, getUnreadCount,
-    getUsers, getUserByEmail, addUser, deactivateUser,
+    getUsers, getUserByEmail, getUserById, addUser, deactivateUser, updateUser,
     getTotalKwhToday, getMonthlyEnergy,
     getSystemConfig, updateSystemConfig
   };

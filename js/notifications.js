@@ -107,10 +107,22 @@ async function viewNotification(notificationId) {
   const { notification: n, fault, node } = row;
 
   document.getElementById("notifModalTitle").textContent = n.notification_type;
+  // Build the message from live fault + node data so the label always reflects
+  // the node's current node_id/pole_number. Resolution notices read "resolved /
+  // back online"; Fault Alerts read "Fault detected...". Fall back to the stored
+  // message when the source data is gone.
+  const liveMessage = n.notification_type === "Resolution"
+    ? (fault && node
+        ? `Fault ${fault.fault_id} at Node ${node.node_id} (${node.pole_number}) has been resolved. The node is back online.`
+        : (n.message || 'Fault resolved. The node is back online.'))
+    : (fault && node
+        ? `Fault detected at Node ${node.node_id} (${node.pole_number}) — ${fault.fault_type}. ${fault.description || n.message || ''}`
+        : (n.message || 'Fault alert reported via GSM network.'));
+
   document.getElementById("notifModalBody").innerHTML = `
     <p><strong>Node:</strong> ${node ? `${node.node_id} (${node.pole_number})` : '—'}</p>
     <p><strong>Address:</strong> ${node ? node.location : '—'}</p>
-    <p><strong>Message:</strong> ${n.message || 'Fault alert reported via GSM network.'}</p>
+    <p><strong>Message:</strong> ${liveMessage}</p>
     <p><strong>Sent:</strong> ${formatDateTime(n.sent_at)}</p>
     ${fault ? `<p><strong>Fault status:</strong> ${fault.status}</p>` : ''}
   `;

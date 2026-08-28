@@ -12,7 +12,10 @@ wireLogout();
 gateNavByRole(currentRole);
 
 // ---------- Map init ----------
-const map = L.map("map").setView([10.3070, 123.8890], 17);
+// Frame the full Vicente Rama Ave corridor -- Ramon Duterte St corner in the
+// south up to Golden Success College in the north -- so every node is visible
+// on load. renderNodes() finishes the framing with a one-time fitBounds().
+const map = L.map("map").setView([10.3199, 123.8845], 15);
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
@@ -22,6 +25,7 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 const markers = {};
 let allNodes = [];
 let selectedNodeId = null;
+let mapBounded = false; // only auto-frame the map once on first successful load
 
 function statusColor(status) {
   if (status === "Faulty") return "#EF4444";
@@ -105,6 +109,14 @@ async function renderNodes() {
   document.getElementById("kpiActive").textContent = activeCount;
   document.getElementById("kpiFaults").textContent = faultyCount;
   document.getElementById("kpiOffline").textContent = offlineCount;
+
+  // First successful load only: zoom the map once to frame every node (and any
+  // future nodes added via Node Management) without fighting the user's pan.
+  if (!mapBounded && allNodes.length) {
+    mapBounded = true;
+    const nodeBounds = L.latLngBounds(allNodes.map(n => [n.latitude, n.longitude]));
+    map.fitBounds(nodeBounds.pad(0.2), { maxZoom: 16 });
+  }
 }
 
 // ---------- Render node list in side panel ----------
@@ -130,6 +142,9 @@ async function renderNodeList() {
 
 // ---------- Node detail panel ----------
 async function showNodeDetail(streetlightId) {
+  // Remember whether this node was already open so refresh() can re-render the
+  // currently-open detail panel in place without re-centring the map on it.
+  const wasSelected = selectedNodeId === streetlightId;
   selectedNodeId = streetlightId;
   const node = await DataService.getStreetlight(streetlightId);
   if (!node) return;
@@ -179,6 +194,7 @@ async function showNodeDetail(streetlightId) {
   }
 
   document.getElementById("detailLastUpdate").textContent = reading ? formatDateTime(reading.timestamp) : "—";
+  document.getElementById("detailLastSeen").textContent = node.last_seen ? formatDateTime(node.last_seen) : "—";
 
   // Show/hide resolve button
   const resolveBtn = document.getElementById("resolveFaultBtn");
@@ -198,8 +214,11 @@ async function showNodeDetail(streetlightId) {
   // Highlight selected card
   renderNodeList();
 
-  // Pan map to node
-  map.flyTo([node.latitude, node.longitude], 17);
+  // Pan map to node (only when the node is first selected; refresh() re-renders
+  // the open panel in place and must not pull the map away from the user).
+  if (!wasSelected) {
+    map.flyTo([node.latitude, node.longitude], 17);
+  }
 }
 window.showNodeDetail = showNodeDetail;
 
@@ -251,11 +270,16 @@ async function renderFaultBanner() {
 // ---------- Resolve node fault ----------
 async function resolveNodeFault(streetlightId) {
   const reports = await DataService.getFaultReports({ status: "Pending" });
-  const fault = reports.find(r => r.streetlight_id === streetlightId);
-  if (fault) {
-    await DataService.resolveFaultReport(fault.fault_id);
-    await refresh();
+  const faults = reports.filter(r => r.streetlight_id === streetlightId);
+  if (faults.length) {
+    for (const fault of faults) {
+      await DataService.resolveFaultReport(fault.fault_id);
+    }
+  } else {
+    // Simulated fault with no matching fault report -- clear the defect directly.
+    await DataService.markNodeActive(streetlightId);
   }
+  await refresh();
 }
 
 // ---------- Simulate faults ----------
@@ -266,18 +290,46 @@ document.getElementById("simulateFaultsBtn").addEventListener("click", async () 
     alert("No active nodes to simulate faults on.");
     return;
   }
-  // Pick the first active node and make it faulty
+  // Pick the first active node and file a full fault report against it.
+  // reportFault() creates the Pending fault, flips the node to Faulty, and
+  // fires a "Fault Alert" notification to every active user -- so the fault
+  // banner, Fault Records, and Notifications pages all light up at once.
   const target = activeNodes[0];
-  target.status = "Faulty";
-  await DataService.upsertStreetlight(target);
+  await DataService.reportFault(target.streetlight_id);
   await refresh();
 });
+
+// ---------- Simulate heartbeat (power restore / auto-recovery demo) ----------
+document.getElementById("simulateHeartbeatBtn").addEventListener("click", async () => {
+  const nodes = await DataService.getStreetlights();
+  const offlineNodes = nodes.filter(n => n.status === "Offline");
+  if (offlineNodes.length === 0) {
+    alert("All nodes are currently ONLINE. Nothing to recover — pick a node and simulate a power outage (stale last_seen) to test blackout recovery.");
+    return;
+  }
+  // Fresh heartbeat on the first offline node; it flips back to ONLINE for free.
+  await DataService.tickHeartbeat(offlineNodes[0].streetlight_id);
+  await refresh();
+});
+
+// ---------- Auto-refresh ----------
+// Poll so nodes whose heartbeat resumes (power restored) return to ONLINE
+// automatically without needing a refresh or manual step.
+setInterval(() => { refresh(); }, 30000);
 
 // ---------- Refresh all ----------
 async function refresh() {
   await renderNodes();
   await renderNodeList();
   await renderFaultBanner();
+
+  // Keep the open detail panel (if any) in sync with the latest data -- e.g. a
+  // fault was just resolved (Resolve button in the panel or banner) or a
+  // heartbeat resumed during the 30s auto-refresh. Without this, the panel
+  // keeps showing the stale status until the user clicks the node again.
+  if (selectedNodeId) {
+    await showNodeDetail(selectedNodeId);
+  }
 }
 
 refresh();

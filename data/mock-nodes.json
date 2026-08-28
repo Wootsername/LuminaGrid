@@ -38,9 +38,10 @@
       "pole_number": "P-001",
       "barangay": "Guadalupe",
       "location": "Vicente Rama Ave. front Golden Success College",
-      "latitude": 10.30712,
-      "longitude": 123.88914,
+      "latitude": 10.32430,
+      "longitude": 123.88345,
       "installation_date": "2026-06-01",
+      "last_seen": "2026-08-12T19:00:00",
       "status": "Active"
     },
     "2": {
@@ -49,9 +50,10 @@
       "pole_number": "P-002",
       "barangay": "Guadalupe",
       "location": "Vicente Rama Ave. near Guadalupe Bar.",
-      "latitude": 10.30756,
-      "longitude": 123.88940,
+      "latitude": 10.32286,
+      "longitude": 123.88388,
       "installation_date": "2026-06-01",
+      "last_seen": "2026-08-12T19:00:00",
       "status": "Active"
     },
     "3": {
@@ -60,9 +62,10 @@
       "pole_number": "P-003",
       "barangay": "Guadalupe",
       "location": "Vicente Rama Ave. near Guadalupe Elem. School",
-      "latitude": 10.30801,
-      "longitude": 123.88967,
+      "latitude": 10.32214,
+      "longitude": 123.88402,
       "installation_date": "2026-06-01",
+      "last_seen": "2026-08-12T19:00:00",
       "status": "Faulty"
     },
     "4": {
@@ -71,10 +74,11 @@
       "pole_number": "P-004",
       "barangay": "Guadalupe",
       "location": "Vicente Rama Ave. cor. Ramon Duterte St.",
-      "latitude": 10.30845,
-      "longitude": 123.88993,
+      "latitude": 10.31548,
+      "longitude": 123.88550,
       "installation_date": "2026-06-01",
-      "status": "Offline"
+      "last_seen": "2026-08-09T18:30:00",
+      "status": "Active"
     }
   },
   "sensor_readings": {

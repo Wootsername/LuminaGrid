@@ -4583,8 +4583,9 @@ select:focus-visible {
 /* Streetlight Nodes sidebar upgrade. */
 .side-panel-header {
   display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 10px;
   padding: 16px 20px;
 }
 
@@ -4599,13 +4600,15 @@ select:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  flex: 1 1 0;
+  justify-content: center;
   min-height: 36px;
   padding: 8px 12px;
   border: none;
   border-radius: 6px;
   background: #B8321A;
   color: #FFFFFF;
-  font-size: 0;
+  font-size: 0.78rem !important;
   font-weight: 700;
   cursor: pointer;
 }
@@ -4621,14 +4624,51 @@ select:focus-visible {
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01'/%3E%3C/svg%3E") no-repeat center / contain;
 }
 
-.side-panel-header .btn-simulate::after {
-  content: 'Simulate Faults';
-  font-size: 0.78rem;
-}
-
 .side-panel-header .btn-simulate:hover,
 .side-panel-header .btn-simulate:focus-visible {
   background: #991B1B;
+  color: #FFFFFF;
+}
+
+.side-panel-header-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: 0;
+  flex-shrink: 0;
+  width: 100%;
+}
+
+.side-panel-header .btn-heartbeat {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  flex: 1 1 0;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: none;
+  border-radius: 6px;
+  background: #15803D;
+  color: #FFFFFF;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.side-panel-header .btn-heartbeat::before {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  background: currentColor;
+  opacity: 0.9;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 7.65l.78.77L12 21l7.42-7.42.78-.77a5.4 5.4 0 0 0 .22-7.23Z'/%3E%3C/svg%3E") no-repeat center / contain;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20.42 4.58a5.4 5.4 0 0 0-7.65 0l-.77.78-.77-.78a5.4 5.4 0 0 0-7.65 7.65l.78.77L12 21l7.42-7.42.78-.77a5.4 5.4 0 0 0 .22-7.23Z'/%3E%3C/svg%3E") no-repeat center / contain;
+}
+
+.side-panel-header .btn-heartbeat:hover,
+.side-panel-header .btn-heartbeat:focus-visible {
+  background: #166534;
   color: #FFFFFF;
 }
 
@@ -5422,8 +5462,11 @@ select:focus-visible {
   display: none;
   flex-direction: column;
   min-width: 0;
+  min-height: 0;
   padding: 0;
+  max-height: 90vh;
   overflow-x: hidden;
+  overflow-y: auto;
   background: #FFFFFF;
   color: #1E293B;
 }
@@ -6050,12 +6093,14 @@ select:focus-visible {
   display: inline-flex;
   align-items: center;
   gap: 7px;
+  flex: 1 1 0;
+  justify-content: center;
   min-height: 36px;
   padding: 8px 12px;
   border-radius: 6px;
   background: #B8321A;
   color: var(--white);
-  font-size: 0;
+  font-size: 0.78rem !important;
   font-weight: 700;
 }
 
@@ -6068,11 +6113,6 @@ select:focus-visible {
   opacity: 0.9;
   -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01'/%3E%3C/svg%3E") no-repeat center / contain;
   mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21.73 18-8-14a2 2 0 0 0-3.46 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3ZM12 9v4M12 17h.01'/%3E%3C/svg%3E") no-repeat center / contain;
-}
-
-.side-panel-header .btn-simulate::after {
-  content: 'Simulate Faults';
-  font-size: 0.78rem;
 }
 
 .side-panel-header .btn-simulate:hover,

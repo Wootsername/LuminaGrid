@@ -42,6 +42,7 @@ document.getElementById("nodeForm").addEventListener("submit", async (e) => {
     latitude: parseFloat(document.getElementById("latitude").value),
     longitude: parseFloat(document.getElementById("longitude").value),
     installation_date: new Date().toISOString().slice(0, 10),
+    last_seen: new Date().toISOString(),
     status: "Active"
   });
 

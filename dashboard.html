@@ -95,7 +95,10 @@
         <div id="nodeListView">
           <div class="side-panel-header">
             <h3>Streetlight Nodes</h3>
-            <button class="btn-simulate" id="simulateFaultsBtn">Simulate Faults</button>
+            <div class="side-panel-header-actions">
+              <button class="btn-heartbeat" id="simulateHeartbeatBtn" title="Simulate power returning -- node auto-recovers to ONLINE">Simulate Power</button>
+              <button class="btn-simulate" id="simulateFaultsBtn">Simulate Faults</button>
+            </div>
           </div>
           <div class="node-list" id="nodeList">
             <div class="empty-state"><strong>Loading...</strong></div>
@@ -162,6 +165,10 @@
             <tr>
               <td>Last Update</td>
               <td id="detailLastUpdate">—</td>
+            </tr>
+            <tr>
+              <td>Last Seen (Heartbeat)</td>
+              <td id="detailLastSeen">—</td>
             </tr>
           </table>
 

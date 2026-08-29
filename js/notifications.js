@@ -145,6 +145,8 @@ window.viewNotification = viewNotification;
 async function markRead(notificationId) {
   await DataService.markNotificationRead(notificationId);
   loadNotifications();
+  // Instantly refresh the sidebar badge count
+  if (typeof _updateNotificationBadge === "function") _updateNotificationBadge();
 }
 window.markRead = markRead;
 

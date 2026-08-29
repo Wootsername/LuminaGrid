@@ -65,8 +65,11 @@ function renderGlobalNav() {
   nav.innerHTML = NAV_ITEMS.map((item) => {
     const visible = role === "admin" || item.roles.includes(role);
     const active = currentRoute === item.path || (item.activePaths || []).includes(currentRoute);
+    const badge = item.icon === "notification"
+      ? '<span class="nav-notif-badge" id="navNotifBadge" aria-label="Unread notifications"></span>'
+      : '';
     return `<a href="${item.path}" class="${active ? "active" : ""}" data-roles="${item.roles.join(",")}" data-nav-icon="${item.icon}"${active ? ' aria-current="page"' : ""}${visible ? "" : " hidden"}>
-      <span class="nav-icon" aria-hidden="true"></span>${item.label}
+      <span class="nav-icon" aria-hidden="true"></span>${item.label}${badge}
     </a>`;
   }).join("");
 }
@@ -99,6 +102,35 @@ function gateNavByRole(role) {
     link.hidden = !visible;
     link.setAttribute("aria-hidden", String(!visible));
   });
+  // Kick off real-time notification badge polling
+  _startNotificationBadgePolling();
+}
+
+// ---- Real-time notification badge ----
+let _notifBadgeInterval = null;
+
+async function _updateNotificationBadge() {
+  try {
+    if (typeof DataService === "undefined") return;
+    const count = await DataService.getUnreadCount();
+    const badge = document.getElementById("navNotifBadge");
+    if (!badge) return;
+    if (count > 0) {
+      badge.textContent = count > 99 ? "99+" : count;
+      badge.classList.add("visible");
+      badge.setAttribute("aria-label", count + " unread notifications");
+    } else {
+      badge.textContent = "";
+      badge.classList.remove("visible");
+      badge.setAttribute("aria-label", "No unread notifications");
+    }
+  } catch (_) { /* silent — badge is non-critical */ }
+}
+
+function _startNotificationBadgePolling() {
+  if (_notifBadgeInterval) return; // already running
+  _updateNotificationBadge(); // immediate first paint
+  _notifBadgeInterval = setInterval(_updateNotificationBadge, 3000);
 }
 
 function paintUserChip() {

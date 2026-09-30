@@ -246,7 +246,7 @@ async function renderFaultBanner() {
 
   const latestFault = reports[0];
   const node = byId[latestFault.streetlight_id];
-  const nodeLabel = node ? `Node ${node.node_id} (${node.pole_number})` : latestFault.streetlight_id;
+  const nodeLabel = node ? (node.node_id ? `Node ${node.node_id} (${node.pole_number || "—"})` : `Node ${node.pole_number || node.streetlight_id}`) : latestFault.streetlight_id;
 
   document.getElementById("bannerText").textContent =
     `Fault detected at ${nodeLabel} – ${latestFault.fault_type}. ${latestFault.description || ""}`;

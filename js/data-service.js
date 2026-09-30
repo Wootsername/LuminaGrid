@@ -55,7 +55,10 @@ const DataService = (() => {
     const seenMs = node.last_seen ? new Date(node.last_seen).getTime() : NaN;
 
     let status;
-    if (isNaN(seenMs) || nowMs - seenMs > timeoutMin * 60 * 1000) {
+    // Only apply the heartbeat/offline check when last_seen is present and
+    // parseable.  Firebase streetlight records may not carry last_seen (it is
+    // not part of the ERD), so a missing value must never force Offline.
+    if (node.last_seen && !isNaN(seenMs) && nowMs - seenMs > timeoutMin * 60 * 1000) {
       status = "Offline";
     } else {
       const pendingHardware = Object.values(data.fault_reports || {}).some(
@@ -70,8 +73,8 @@ const DataService = (() => {
   // Always derives the node identity from the live node record so the text can
   // never go stale (e.g. pole_number changed after the alert was first sent).
   function _faultAlertMessage(fault, node) {
-    const label = node && node.node_id
-      ? `${node.node_id} (${node.pole_number || "—"})`
+    const label = node
+      ? (node.node_id ? `${node.node_id} (${node.pole_number || "—"})` : (node.pole_number || node.streetlight_id))
       : (fault ? fault.streetlight_id : "—");
     return `Fault detected at Node ${label} — ${fault.fault_type}. ${fault.description || ""}`;
   }
@@ -84,7 +87,7 @@ const DataService = (() => {
     Object.values(data.notifications || {}).forEach((n) => {
       if (n.notification_type !== "Fault Alert") return;
       const fault = n.fault_id && data.fault_reports[n.fault_id];
-      if (fault && fault.streetlight_id === node.streetlight_id) {
+      if (fault && String(fault.streetlight_id) === String(node.streetlight_id)) {
         n.message = _faultAlertMessage(fault, node);
       }
     });
@@ -92,8 +95,8 @@ const DataService = (() => {
 
   // Compose the "Resolution" message for a node that has just returned ONLINE.
   function _resolutionMessage(fault, node) {
-    const label = node && node.node_id
-      ? `${node.node_id} (${node.pole_number || "—"})`
+    const label = node
+      ? (node.node_id ? `${node.node_id} (${node.pole_number || "—"})` : (node.pole_number || node.streetlight_id))
       : (fault ? fault.streetlight_id : "—");
     if (fault && fault.fault_type === "Node Offline") {
       return `Node ${label} is back online. Heartbeat resumed and the offline alert has been cleared.`;
@@ -129,13 +132,56 @@ const DataService = (() => {
   }
 
   async function getStreetlights() {
+    const snapshot = await db.ref("streetlight").once("value");
+    const raw = snapshot.val() || {};
+
+    // Firebase numeric keys (1, 2, 3, 4) may produce an array-like object
+    // with an empty index 0 — filter(Boolean) strips those nulls out.
+    const nodes = Object.values(raw)
+      .filter(Boolean)
+      .map((node) => ({
+        ...node,
+        streetlight_id: String(node.streetlight_id)
+      }));
+
     const data = await _load();
-    return Object.values(data.streetlights || {}).map((n) => _enrich(n, data));
+    const faultsSnap = await db.ref("fault_report").once("value");
+    const liveFaultReports = faultsSnap.val() || {};
+
+    const enrichData = {
+      ...data,
+      fault_reports: liveFaultReports
+    };
+
+    return nodes.map((n) => _enrich(n, enrichData));
   }
 
   async function getStreetlight(streetlightId) {
+    const snapshot = await db
+      .ref("streetlight/" + streetlightId)
+      .once("value");
+
+    const node = snapshot.val();
+
+    if (!node) {
+      return null;
+    }
+
+    const enriched = {
+      ...node,
+      streetlight_id: String(node.streetlight_id)
+    };
+
     const data = await _load();
-    return _enrich(data.streetlights[streetlightId], data);
+    const faultsSnap = await db.ref("fault_report").once("value");
+    const liveFaultReports = faultsSnap.val() || {};
+
+    const enrichData = {
+      ...data,
+      fault_reports: liveFaultReports
+    };
+
+    return _enrich(enriched, enrichData);
   }
 
   async function upsertStreetlight(node) {
@@ -185,55 +231,82 @@ const DataService = (() => {
 
   // ---------- Sensor readings ----------
   async function getLatestReading(streetlightId) {
-    const data = await _load();
-    const readings = Object.values(data.sensor_readings[streetlightId] || {});
-    if (readings.length === 0) return null;
-    return readings.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0];
+    const snapshot = await db
+      .ref("sensor_reading/" + streetlightId)
+      .once("value");
+
+    const raw = snapshot.val() || {};
+
+    const readings = Object.values(raw)
+      .filter(Boolean);
+
+    if (readings.length === 0) {
+      return null;
+    }
+
+    return readings.sort(
+      (a, b) => new Date(b.timestamp) - new Date(a.timestamp)
+    )[0];
   }
 
   async function getAllReadings() {
-    const data = await _load();
+    const snapshot = await db
+      .ref("sensor_reading")
+      .once("value");
+
+    const raw = snapshot.val() || {};
+
     const rows = [];
-    Object.entries(data.sensor_readings || {}).forEach(([streetlightId, readings]) => {
-      Object.values(readings).forEach((r) => rows.push(r));
-    });
+
+    Object.values(raw)
+      .filter(Boolean)
+      .forEach((readings) => {
+
+        Object.values(readings)
+          .filter(Boolean)
+          .forEach((reading) => {
+            rows.push(reading);
+          });
+
+      });
+
     return rows;
   }
 
   // ---------- Fault reports ----------
   async function getFaultReports({ status } = {}) {
-    const data = await _load();
-    let reports = Object.values(data.fault_reports || {});
+    const snapshot = await db.ref("fault_report").once("value");
+    const raw = snapshot.val() || {};
+    let reports = Object.values(raw).filter(Boolean);
     if (status) reports = reports.filter((r) => r.status === status);
     return reports.sort((a, b) => new Date(b.detected_at) - new Date(a.detected_at));
   }
 
   async function resolveFaultReport(faultId) {
-    const data = await _load();
-    const report = data.fault_reports[faultId];
-    if (report) {
-      const wasPending = report.status === "Pending";
-      report.status = "Resolved";
-      report.resolved_at = report.resolved_at || new Date().toISOString();
-      // Now that this defect is resolved, restore the node to Active unless it
-      // still carries another pending hardware fault.
-      const sid = report.streetlight_id;
-      const stillPending = Object.values(data.fault_reports || {}).some(
-        (r) => r.streetlight_id === sid && r.status === "Pending" && r.fault_type !== "Node Offline"
-      );
-      const node = data.streetlights && data.streetlights[sid];
-      if (node && !stillPending && node.status === "Faulty") {
-        node.status = "Active";
-      }
-      // The node is back online -- update the notification feed: refresh any
-      // stale Fault Alert label for this node and fan out a Resolution notice
-      // to every active user (only on the actual Pending -> Resolved move so
-      // repeated resolves never duplicate entries).
-      if (wasPending && node) {
-        _refreshNodeAlertMessages(data, node);
-        _dispatchResolutionNotifications(data, report, node);
-      }
+    const snapshot = await db.ref("fault_report/" + faultId).once("value");
+    const report = snapshot.val();
+
+    if (!report) return null;
+
+    report.status = "Resolved";
+    report.resolved_at = report.resolved_at || new Date().toISOString();
+
+    // Update fault report in Firebase
+    await db.ref("fault_report/" + faultId).set(report);
+
+    const sid = report.streetlight_id;
+
+    // Check if there are other pending hardware faults for this streetlight
+    const allFaultsSnap = await db.ref("fault_report").once("value");
+    const allFaults = Object.values(allFaultsSnap.val() || {}).filter(Boolean);
+    const stillPending = allFaults.some(
+      (r) => String(r.streetlight_id) === String(sid) && r.status === "Pending" && r.fault_type !== "Node Offline"
+    );
+
+    if (!stillPending) {
+      await db.ref("streetlight/" + sid + "/status").set("Active");
     }
+
     return report;
   }
 
@@ -244,23 +317,18 @@ const DataService = (() => {
   // the dashboard "Simulate Faults" button calls so the fault banner, Fault
   // Records, and Notifications pages all reflect the new fault immediately.
   async function reportFault(streetlightId, overrides = {}) {
-    const data = await _load();
-    const node = data.streetlights[streetlightId];
+    const node = await getStreetlight(streetlightId);
     if (!node) return null;
 
-    // Next sequential fault id (f501, f502, ... whatever is already seeded).
-    const faultNums = Object.keys(data.fault_reports || {})
+    const latest = await getLatestReading(streetlightId);
+
+    // Next sequential fault id
+    const faultsSnap = await db.ref("fault_report").once("value");
+    const faultNums = Object.keys(faultsSnap.val() || {})
       .map((id) => parseInt(id.replace(/\D/g, ""), 10))
       .filter((n) => !isNaN(n));
     const faultId = "f" + ((faultNums.length ? Math.max(...faultNums) : 500) + 1);
 
-    // Attach the newest reading so the report links to a real reading_id.
-    const readings = Object.values(data.sensor_readings[streetlightId] || {})
-      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-    const latest = readings[0] || null;
-
-    // Derive a believable hardware fault from live readings; fall back to a
-    // random one when no readings exist yet.
     const templates = [
       {
         type: "Bulb Failure",
@@ -275,7 +343,7 @@ const DataService = (() => {
       {
         type: "Voltage Fluctuation",
         severity: "Low",
-        desc: "Supply voltage dropped below 200V for more than 5 minutes."
+        desc: "Supply voltage dropped below the configured operating threshold."
       },
       {
         type: "Sensor Malfunction",
@@ -286,9 +354,9 @@ const DataService = (() => {
     let tpl;
     if (latest) {
       if ((latest.current || 0) <= 0.02 && (latest.ambient_light || 0) < 200) {
-        tpl = templates[0]; // Dark + zero draw -> burnt bulb
+        tpl = templates[0];
       } else if ((latest.current || 0) > 0.5) {
-        tpl = templates[1]; // Current spike -> wiring issue
+        tpl = templates[1];
       } else {
         tpl = templates[Math.floor(Math.random() * templates.length)];
       }
@@ -299,7 +367,7 @@ const DataService = (() => {
     const severity = overrides.severity || tpl.severity;
     const description = overrides.description || ("Simulated fault — " + tpl.desc);
 
-    const detectedAt = _mockNow(data); // keep inside the simulated timeline
+    const detectedAt = new Date().toISOString();
 
     const report = {
       fault_id: faultId,
@@ -312,34 +380,12 @@ const DataService = (() => {
       detected_at: detectedAt,
       resolved_at: null
     };
-    data.fault_reports[faultId] = report;
 
-    // Persist the hardware defect so the node keeps the Faulty status even
-    // across recomputes (resolveFaultReport clears this later).
-    node.status = "Faulty";
+    // Write report to Firebase
+    await db.ref("fault_report/" + faultId).set(report);
 
-    // Fan out one Unread "Fault Alert" per active user, like the seeded data.
-    const notifNums = Object.keys(data.notifications || {})
-      .map((id) => parseInt(id.replace(/\D/g, ""), 10))
-      .filter((n) => !isNaN(n));
-    let nextNotifNum = notifNums.length ? Math.max(...notifNums) : 900;
-    const sentAt = new Date(new Date(detectedAt).getTime() + 1000).toISOString();
-    // Re-occurrence on the same node: refresh any earlier Fault Alert messages
-    // for this node so the feed never carries a stale node/pole label.
-    _refreshNodeAlertMessages(data, node);
-    Object.values(data.users || {}).forEach((u) => {
-      if (u.status !== "Active") return;
-      nextNotifNum += 1;
-      data.notifications["n" + nextNotifNum] = {
-        notification_id: "n" + nextNotifNum,
-        fault_id: faultId,
-        user_id: u.user_id,
-        notification_type: "Fault Alert",
-        message: _faultAlertMessage(report, node),
-        status: "Unread",
-        sent_at: sentAt
-      };
-    });
+    // Update node status
+    await db.ref("streetlight/" + streetlightId + "/status").set("Faulty");
 
     return report;
   }

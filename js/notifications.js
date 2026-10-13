@@ -11,6 +11,22 @@ const notifModal = document.getElementById("notifModal");
 
 let _allRows = [];
 
+// Firebase streetlight records do not carry node_id and may use barangay
+// instead of the old mock location field -- fall back gracefully.
+function nodeIdOf(node) {
+  return (node && (node.node_id || node.pole_number || node.streetlight_id)) || "—";
+}
+
+// Display label: "LG-03 (P-003)" when a real node_id exists, otherwise the
+// plain pole/streetlight fallback — avoids rendering "P-003 (P-003)".
+function nodeLabelOf(node) {
+  return (node && node.node_id) ? `${node.node_id} (${node.pole_number || "—"})` : nodeIdOf(node);
+}
+
+function nodeAddressOf(node) {
+  return (node && (node.location || node.barangay)) || "—";
+}
+
 function formatNotifDate(iso) {
   if (!iso) return "—";
   const d = new Date(iso);
@@ -47,9 +63,9 @@ function renderRows(rows) {
     <tr id="notif-${n.notification_id}">
       <td class="notif-status-icon" data-label="">${resolved ? '<span class="icon-ok" aria-label="Resolved"></span>' : '<span class="icon-warn" aria-label="Unresolved"></span>'}</td>
       <td data-label="Date">${formatNotifDate(n.sent_at)}</td>
-      <td data-label="Node ID">${node ? node.node_id : '—'}</td>
-      <td data-label="Pole ID">${node ? node.pole_number : '—'}</td>
-      <td class="notif-addr-cell" data-label="Address">${node ? node.location : (n.message || '—')}</td>
+      <td data-label="Node ID">${node ? nodeIdOf(node) : '—'}</td>
+      <td data-label="Pole ID">${node ? (node.pole_number || '—') : '—'}</td>
+      <td class="notif-addr-cell" data-label="Address">${node ? nodeAddressOf(node) : (n.message || '—')}</td>
       <td data-label="Action">
         <div class="notif-action-cell">
           <button class="notif-view-btn" onclick="viewNotification('${n.notification_id}')">View</button>
@@ -80,7 +96,7 @@ function applyFilters() {
 
   if (query) {
     rows = rows.filter(({ node, fault }) => {
-      const haystack = [node?.node_id, node?.pole_number, node?.location, fault?.fault_type]
+      const haystack = [node?.node_id, node?.pole_number, node?.streetlight_id, node?.location, node?.barangay, fault?.fault_type]
         .filter(Boolean).join(" ").toLowerCase();
       return haystack.includes(query);
     });
@@ -113,15 +129,15 @@ async function viewNotification(notificationId) {
   // message when the source data is gone.
   const liveMessage = n.notification_type === "Resolution"
     ? (fault && node
-        ? `Fault ${fault.fault_id} at Node ${node.node_id} (${node.pole_number}) has been resolved. The node is back online.`
+        ? `Fault ${fault.fault_id} at Node ${nodeLabelOf(node)} has been resolved. The node is back online.`
         : (n.message || 'Fault resolved. The node is back online.'))
     : (fault && node
-        ? `Fault detected at Node ${node.node_id} (${node.pole_number}) — ${fault.fault_type}. ${fault.description || n.message || ''}`
+        ? `Fault detected at Node ${nodeLabelOf(node)} — ${fault.fault_type}. ${fault.description || n.message || ''}`
         : (n.message || 'Fault alert reported via GSM network.'));
 
   document.getElementById("notifModalBody").innerHTML = `
-    <p><strong>Node:</strong> ${node ? `${node.node_id} (${node.pole_number})` : '—'}</p>
-    <p><strong>Address:</strong> ${node ? node.location : '—'}</p>
+    <p><strong>Node:</strong> ${node ? nodeLabelOf(node) : '—'}</p>
+    <p><strong>Address:</strong> ${nodeAddressOf(node)}</p>
     <p><strong>Message:</strong> ${liveMessage}</p>
     <p><strong>Sent:</strong> ${formatDateTime(n.sent_at)}</p>
     ${fault ? `<p><strong>Fault status:</strong> ${fault.status}</p>` : ''}

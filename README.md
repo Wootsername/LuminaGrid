@@ -5,10 +5,12 @@ Monitoring and Fault Detection System via GSM Network for Local Government
 Units in Cebu City** (Capstone 2, University of Cebu – Main).
 
 Built dashboard-first since the ESP32/SIM800L hardware isn't ready yet. Every
-page reads and writes through `js/data-service.js`, which currently serves
-mock data from `data/mock-nodes.json`. When hardware exists, only the
-*internals* of `data-service.js` change to real Firebase Realtime Database
-calls — no other file in this project needs to be touched.
+page reads and writes through `js/data-service.js`, whose *internals* now call
+Firebase Realtime Database (all eight data nodes) and Firebase Authentication
+(Email/Password). The legacy `data/mock-nodes.json` file was deleted in the
+final migration step — `upsertStreetlight()`, `tickHeartbeat()` and
+`markNodeActive()` now read and write Firebase like everything else, so no
+runtime code depends on it anymore.
 
 ## Folder structure
 
@@ -27,7 +29,7 @@ luminagrid-dashboard/
 │   └── style.css              shared styling for every page
 │
 ├── js/
-│   ├── firebase-config.js     Firebase project keys (commented out until wired in)
+│   ├── firebase-config.js     Firebase project config (active — wired in)
 │   ├── data-service.js         ★ single data-access layer — every page calls this
 │   ├── utils.js                requireRole(), role labels, user chip, logout, date formatting
 │   ├── auth.js                 login only — no self-registration (see below)
@@ -39,9 +41,7 @@ luminagrid-dashboard/
 │   ├── system-logs.js
 │   └── super-admin.js
 │
-├── assets/icons/               (empty — favicon, map pin icons, etc.)
-└── data/
-    └── mock-nodes.json         6 ERD entities, object-keyed by ID
+└── assets/icons/               (empty — favicon, map pin icons, etc.)
 ```
 
 ## Why no register.html
@@ -66,10 +66,10 @@ of the three LGU-facing roles:
 | system-logs.html | ✔ | — | — |
 
 The nav bar itself also hides links a role can't use (`data-roles` attribute
-on each `<a>`, checked by `gateNavByRole()` in `dashboard.js` — worth lifting
-into `utils.js` if you add it to every page).
+on each `<a>`, checked by `gateNavByRole()` in `utils.js`, which every page
+loads).
 
-## Data model (`data/mock-nodes.json`)
+## Data model (Firebase Realtime Database)
 
 Object-keyed by ID, matching the confirmed ERD field names exactly
 (`fault_id`, `detected_at`, `resolved_at`, `description`, `severity`,
@@ -77,15 +77,17 @@ Object-keyed by ID, matching the confirmed ERD field names exactly
 `repair_status`, `remarks`, `barangay`):
 
 ```
-users/{user_id}                          first_name, last_name, email, role, contact_number, created_at
-streetlights/{streetlight_id}            pole_number, barangay, latitude, longitude, installation_date, status
-sensor_readings/{streetlight_id}/{reading_id}   current, voltage, ambient_light, power_consumption, light_status, timestamp
-fault_reports/{fault_id}                 streetlight_id, reading_id, fault_type, description, severity, status, detected_at, resolved_at
-maintenance_records/{maintenance_id}     fault_id, user_id, repair_date, repair_status, remarks
-notifications/{notification_id}          fault_id, user_id, notification_type, status, sent_at
+user/{user_id}                           first_name, last_name, email, role, contact_number, created_at
+streetlight/{streetlight_id}             pole_number, barangay, latitude, longitude, installation_date, status
+sensor_reading/{streetlight_id}/{reading_id}    current, voltage, ambient_light, power_consumption, light_status, timestamp
+fault_report/{fault_id}                  streetlight_id, reading_id, fault_type, description, severity, status, detected_at, resolved_at
+maintenance_record/{maintenance_id}      fault_id, user_id, repair_date, repair_status, remarks
+notification/{notification_id}           fault_id, user_id, notification_type, status, sent_at
+system_config                            energy_rate_per_kwh, thresholds, LDR dusk/dawn, heartbeat_timeout_minutes
+energy_monthly/{YYYY-MM}                 month, total_kwh, cost
 ```
 
-Seeded test accounts (any non-empty password works — see note below):
+Seeded profile accounts (sign-in uses Firebase Authentication — Email/Password):
 `juan.delacruz@cebucity.gov.ph` (Admin), `mario.reyes@cebucity.gov.ph`
 (Electrician), `liza.santos@cebucity.gov.ph` (Finance).
 
@@ -98,22 +100,25 @@ python3 -m http.server 8080
 ```
 
 Then open `http://localhost:8080`. (Must be served over `http://`, not
-opened as `file://` — the `fetch()` call in `data-service.js` for
-`mock-nodes.json` will fail otherwise.)
+opened as `file://` — the Firebase SDK needs a real origin.)
 
 ## What's real vs. what's stubbed
 
-**Working now, against mock data:** login (role-based redirect), live map
-with status-colored markers and node popups, KPI counters, fault alerts,
-resolving faults, energy charts + CSV export, node registration, user
-account management, full fault history, and a merged system-log feed.
+**Working now, against Firebase Realtime Database + Authentication:**
+login (Email/Password, role-based redirect), live map with status-colored
+markers and node popups, KPI counters, fault alerts, resolving faults,
+energy charts + CSV export, user account management, full fault history,
+and a merged system-log feed.
+
+**Node registration and the dashboard simulation buttons:** also against
+Firebase — `upsertStreetlight()`, `tickHeartbeat()` and `markNodeActive()`
+were migrated off the legacy mock file, which has been deleted.
 
 **Known simplifications, flagged in code comments:**
-- `auth.js` checks mock users with any non-empty password — swap for real
-  `firebase.auth().signInWithEmailAndPassword()` once Firebase is live.
-- `DataService.addUser()` only writes the profile record — creating the
-  actual Firebase Auth sign-in credential for someone else needs to go
-  through a Cloud Function/Admin SDK, not the client.
+- `DataService.addUser()` creates the Firebase Auth credential through a
+  secondary "UserCreator" Firebase app instance — a client-side prototype
+  convenience; an admin-only server boundary would need the Admin SDK /
+  Cloud Functions.
 - `super-admin.html`'s passphrase gate is a placeholder, not real access
   control.
 - Energy kWh figures are a rough per-reading estimate
@@ -121,12 +126,12 @@ account management, full fault history, and a merged system-log feed.
 
 ## Next steps
 
-1. Swap `data-service.js` internals for Firebase Realtime Database calls
-   once the four ESP32 nodes are transmitting.
-2. Replace the mock-password check in `auth.js` with real Firebase Auth.
-3. Replace the placeholder map center in `dashboard.js` with the real GPS
+1. Harden the Firebase Realtime Database security rules once migration
+   cleanup is complete (temporary read/write rules are in place for the
+   migration period).
+2. Replace the placeholder map center in `dashboard.js` with the real GPS
    coordinates of the four installed nodes.
-4. Decide whether `super-admin.html`'s other Use Case items (deploy
+3. Decide whether `super-admin.html`'s other Use Case items (deploy
    firmware, configure DB/backend settings, monitor system health) need
    actual UI, or stay as manual dev-team tasks — flagged as an open
    assumption in the page itself.

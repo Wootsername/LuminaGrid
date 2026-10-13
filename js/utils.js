@@ -77,18 +77,77 @@ function renderGlobalNav() {
 // Call on every protected page to enforce the Use Case Diagram's
 // access boundaries (e.g. only 'admin' may see Node Management,
 // User Management, Fault Records, System Logs).
+// Since Step 9, sessionStorage is only a UI cache: Firebase
+// Authentication is the actual source of truth for "is someone
+// signed in", so a stale local session must not grant access.
 function requireRole(allowedRoles) {
   const role = sessionStorage.getItem("luminagrid_role");
   if (!role) {
     window.location.href = "index.html";
     return null;
   }
+  _enforceFirebaseSession();
   if (allowedRoles && !allowedRoles.includes(role)) {
     alert("Your role (" + roleLabel(role) + ") doesn't have access to this page.");
     window.location.href = "dashboard.html";
     return null;
   }
   return role;
+}
+
+// Verify via auth.onAuthStateChanged that Firebase Authentication really
+// has a signed-in user, and that the linked /user profile still exists and
+// is Active. If not, end the Auth session, clear the cached UI session and
+// return to the login page. Smallest change that prevents a logged-out
+// user from being treated as authenticated merely because stale
+// sessionStorage exists. Role/profile data in sessionStorage remains only
+// as UI convenience for the nav/chips.
+function _enforceFirebaseSession() {
+  if (typeof auth === "undefined" || !auth) return;
+  auth.onAuthStateChanged(async (fbUser) => {
+    const reject = async () => {
+      try { await auth.signOut(); } catch (_) { /* already signed out */ }
+      sessionStorage.clear();
+      window.location.href = "index.html";
+    };
+    if (!fbUser) {
+      // No Firebase Auth session — only stale local storage remains.
+      await reject();
+      return;
+    }
+    try {
+      // Step 13 revision: authz-first resolution (auth.uid -> authz/{uid} ->
+      // logical user_id -> own profile) so hardened rules never need a whole
+      // /user scan. PERMISSION_DENIED means "no authz / deactivated" -> reject.
+      // Missing authz under still-permissive rules (transition) falls back to
+      // the legacy lookups. Other errors keep the existing blip tolerance.
+      let profile = null;
+      let entry = null;
+      try {
+        entry = await DataService.getAuthz(fbUser.uid);
+      } catch (err) {
+        if (err && err.code === "PERMISSION_DENIED") {
+          await reject();
+          return;
+        }
+        throw err; // transient read failure -> outer catch keeps session
+      }
+      if (entry && entry.user_id) {
+        profile = await DataService.getUserById(entry.user_id);
+      } else {
+        profile = await DataService.getUserByAuthUid(fbUser.uid);
+        if (!profile && fbUser.email) {
+          profile = await DataService.getUserByEmail(fbUser.email);
+        }
+      }
+      if (!profile || String(profile.status) !== "Active") {
+        await reject();
+      }
+    } catch (_) {
+      // Profile read failed (e.g. transient network error) — keep the
+      // session rather than locking the user out on a blip.
+    }
+  });
 }
 
 function gateNavByRole(role) {
@@ -150,8 +209,13 @@ function paintUserChip() {
 function wireLogout() {
   const link = document.getElementById("logoutLink");
   if (!link) return;
-  link.addEventListener("click", (e) => {
+  link.addEventListener("click", async (e) => {
     e.preventDefault();
+    // Firebase Authentication is the actual session — end it FIRST, then
+    // clear the UI cache and apply the existing redirect behavior.
+    try {
+      if (typeof auth !== "undefined" && auth) await auth.signOut();
+    } catch (_) { /* still clear local state */ }
     sessionStorage.clear();
     window.location.href = "index.html";
   });

@@ -43,16 +43,24 @@ document.getElementById("cancelUserBtn").addEventListener("click", () => modal.c
 
 document.getElementById("userForm").addEventListener("submit", async (e) => {
   e.preventDefault();
-  await DataService.addUser({
-    first_name: document.getElementById("firstName").value.trim(),
-    last_name: document.getElementById("lastName").value.trim(),
-    email: document.getElementById("email").value.trim(),
-    contact_number: document.getElementById("contactNumber").value.trim(),
-    role: document.getElementById("userRoleSelect").value
-  });
-  modal.classList.remove("open");
-  e.target.reset();
-  renderUsers();
+  try {
+    await DataService.addUser({
+      first_name: document.getElementById("firstName").value.trim(),
+      last_name: document.getElementById("lastName").value.trim(),
+      email: document.getElementById("email").value.trim(),
+      contact_number: document.getElementById("contactNumber").value.trim(),
+      role: document.getElementById("userRoleSelect").value,
+      // Consumed by Firebase Auth only (secondary UserCreator app) —
+      // never written to the Realtime Database /user node.
+      password: document.getElementById("userPassword").value
+    });
+    modal.classList.remove("open");
+    e.target.reset();
+    renderUsers();
+  } catch (err) {
+    // Surface partial/failed creation clearly instead of pretending it worked.
+    alert(err && err.message ? err.message : "Could not create the account. Please try again.");
+  }
 });
 
 renderUsers();

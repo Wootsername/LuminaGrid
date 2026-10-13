@@ -39,12 +39,19 @@ async function renderLogs() {
     // node's current identity. Resolution notices read "resolved / back online";
     // Fault Alerts read "Fault detected...". Fall back to the stored message
     // when the source record is missing.
+    // Firebase streetlight records have no node_id — apply the established
+    // fallback (node_id -> pole_number -> streetlight_id -> "—") and only
+    // append "(P-00x)" when a real node_id exists, so the log never renders
+    // "Node undefined" or a duplicated "P-003 (P-003)" label.
+    const nodeLabel = node
+      ? (node.node_id ? `${node.node_id} (${node.pole_number || "—"})` : (node.pole_number || node.streetlight_id || "—"))
+      : "—";
     const detail = n.notification_type === "Resolution"
       ? (fault && node
-          ? `Fault ${fault.fault_id} at Node ${node.node_id} (${node.pole_number}) has been resolved. The node is back online.`
+          ? `Fault ${fault.fault_id} at Node ${nodeLabel} has been resolved. The node is back online.`
           : (n.message || "Fault resolved. The node is back online."))
       : (fault && node
-          ? `Fault detected at Node ${node.node_id} (${node.pole_number}) — ${fault.fault_type}. ${fault.description || ''}`
+          ? `Fault detected at Node ${nodeLabel} — ${fault.fault_type}. ${fault.description || ''}`
           : (n.message || "Notification sent."));
     logs.push({
       time: n.sent_at,

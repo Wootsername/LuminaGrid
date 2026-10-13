@@ -27,7 +27,7 @@ async function loadMaintenanceData() {
       return `
         <tr>
           <td><strong>${r.maintenance_id}</strong></td>
-          <td>${node.node_id || node.pole_number || r.streetlight_id} (${node.pole_number || ""})</td>
+          <td>${node.node_id ? `${node.node_id} (${node.pole_number || "—"})` : (node.pole_number || r.streetlight_id || "—")}</td>
           <td>${electricianName}</td>
           <td><span class="status-pill ${r.repair_status === 'Completed' ? 'resolved' : 'pending'}">${r.repair_status}</span></td>
           <td>${formatDateTime(r.repair_date)}</td>
@@ -49,8 +49,8 @@ async function loadMaintenanceData() {
       return `
         <div class="maintenance-card">
           <div class="mc-info">
-            <h4>${node.node_id || f.streetlight_id} — ${f.fault_type}</h4>
-            <p>${node.location || node.barangay} | Severity: <strong>${f.severity}</strong> | Detected ${formatDateTime(f.detected_at)}</p>
+            <h4>${node.node_id || node.pole_number || f.streetlight_id} — ${f.fault_type}</h4>
+            <p>${node.location || node.barangay || "—"} | Severity: <strong>${f.severity}</strong> | Detected ${formatDateTime(f.detected_at)}</p>
           </div>
           <div class="mc-actions">
             <button class="btn btn-amber" style="padding:6px 12px; font-size:0.78rem;" onclick="quickAcknowledge('${f.fault_id}', '${f.streetlight_id}')">Acknowledge & Resolve</button>
@@ -62,7 +62,10 @@ async function loadMaintenanceData() {
 
   // Populate dropdown in modal
   const select = document.getElementById("mStreetlightSelect");
-  select.innerHTML = streetlights.map(s => `<option value="${s.streetlight_id}">${s.node_id} (${s.pole_number}) - ${s.location}</option>`).join("");
+  // Firebase streetlight records may not carry node_id / location — fall back
+  // the same way the rest of the app does (node_id -> pole_number ->
+  // streetlight_id, location -> barangay) so no "undefined" is rendered.
+  select.innerHTML = streetlights.map(s => `<option value="${s.streetlight_id}">${s.node_id ? `${s.node_id} (${s.pole_number || "—"})` : (s.pole_number || s.streetlight_id || "—")} - ${s.location || s.barangay || "—"}</option>`).join("");
 }
 
 async function quickAcknowledge(faultId, streetlightId) {

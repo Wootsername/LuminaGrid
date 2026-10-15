@@ -166,8 +166,24 @@ async function markRead(notificationId) {
 }
 window.markRead = markRead;
 
+async function markAllRead() {
+  const btn = document.getElementById("notifMarkAllBtn");
+  if (btn) btn.disabled = true;
+  try {
+    // Marks ONLY the current user's own Unread notifications as Read (never
+    // another user's copies), then refreshes the page feed + sidebar badge.
+    await DataService.markAllNotificationsRead();
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+  loadNotifications();
+  if (typeof _updateNotificationBadge === "function") _updateNotificationBadge();
+}
+window.markAllRead = markAllRead;
+
 document.getElementById("notifModalCloseBtn").addEventListener("click", () => notifModal.classList.remove("open"));
 document.getElementById("notifSearchInput").addEventListener("input", applyFilters);
 document.getElementById("notifDateFilter").addEventListener("change", applyFilters);
+document.getElementById("notifMarkAllBtn").addEventListener("click", markAllRead);
 
 loadNotifications();

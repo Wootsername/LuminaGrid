@@ -716,8 +716,50 @@ const DataService = (() => {
     };
   }
 
+  // Step 13 revision: Mark-All-As-Read operates on the CURRENT user's own
+  // notification copies only — even for admin (the sidebar badge / mark-all
+  // must never touch another user's copies, only the full-feed admin VIEW
+  // does that). It resolves the logged-in logical user_id from the session,
+  // queries the user's own records via the same orderByChild path
+  // getNotifications() uses, then flips each still-"Unread" copy to "Read"
+  // with an individual RECORD-LEVEL write that changes ONLY status. Reuses
+  // markNotificationRead() so all other fields (notification_id, fault_id,
+  // notification_type, message, sent_at) are preserved exactly and already-Read
+  // records are skipped. Returns the number of records updated (0 if none).
+  async function markAllNotificationsRead(userId) {
+    let target = userId || null;
+    if (!target) {
+      try {
+        target = sessionStorage.getItem("luminagrid_user_id") || null;
+      } catch (_) {
+        target = null; // no session (tools/tests): nothing to mark
+      }
+    }
+    if (!target) return 0;
+
+    const notifs = await getNotifications(target);
+    const unread = notifs.filter((n) => n.status === "Unread");
+    let updated = 0;
+    for (const n of unread) {
+      await markNotificationRead(n.notification_id);
+      updated += 1;
+    }
+    return updated;
+  }
+
   async function getUnreadCount(userId) {
-    const notifs = await getNotifications(userId);
+    let target = userId || null;
+    if (!target) {
+      // Step 13 revision: the badge is ALWAYS scoped to the current user's own
+      // copies for EVERY role, including admin. Even though admin can read the
+      // full feed, the unread badge must never count other users' copies.
+      try {
+        target = sessionStorage.getItem("luminagrid_user_id") || null;
+      } catch (_) {
+        target = null; // no session (tools/tests): fall back to full-feed read
+      }
+    }
+    const notifs = await getNotifications(target);
     return notifs.filter((n) => n.status === "Unread").length;
   }
 
@@ -960,10 +1002,55 @@ const DataService = (() => {
   }
 
   // ---------- Energy aggregation ----------
+  // power_consumption is INSTANTANEOUS power in Watts — it is NOT kWh. The
+  // correct, integrated daily energy is computed by the trusted Admin SDK
+  // backend worker (backend/energy-worker.js), which stores today's running
+  // total at energy_monthly/{YYYY-MM}/today/{YYYY-MM-DD}. That lives INSIDE the
+  // current monthly record — an existing CLIENT-READABLE aggregate — so the
+  // browser never touches the private backend_state node nor a forbidden
+  // energy_daily path (both are default-deny under the deployed rules). If no
+  // daily aggregate exists yet this returns 0; it never fabricates a value.
   async function getTotalKwhToday() {
-    const readings = await getAllReadings();
-    const totalWatts = readings.reduce((sum, r) => sum + (r.power_consumption || 0), 0);
-    return totalWatts / 1000; // rough placeholder until real interval-based accumulation exists
+    const now = Date.now();
+    const monthKey = _manilaMonthKey(now);
+    const dayKey = _manilaDayKey(now);
+    const snap = await db
+      .ref("energy_monthly/" + monthKey + "/today/" + dayKey)
+      .once("value");
+    const val = snap.val();
+    return typeof val === "number" ? val : 0;
+  }
+
+  // Asia/Manila calendar day key (YYYY-MM-DD) for a given epoch ms.
+  function _manilaDayKey(ms) {
+    const dtf = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Manila",
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit"
+    });
+    const p = Object.fromEntries(
+      dtf.formatToParts(new Date(ms)).map((x) => [x.type, x.value])
+    );
+    return `${p.year}-${p.month}-${p.day}`;
+  }
+
+  // Asia/Manila calendar month key (YYYY-MM) for a given epoch ms.
+  function _manilaMonthKey(ms) {
+    const dtf = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Manila",
+      year: "numeric",
+      month: "2-digit"
+    });
+    const p = Object.fromEntries(
+      dtf.formatToParts(new Date(ms)).map((x) => [x.type, x.value])
+    );
+    return `${p.year}-${p.month}`;
+  }
+
+  // Public: current (or given) Asia/Manila billing month key, e.g. "2026-10".
+  function getManilaMonthKey(ms) {
+    return _manilaMonthKey(ms == null ? Date.now() : ms);
   }
 
   // Step 11: the final data node. energy_monthly is read-only seeded
@@ -1030,10 +1117,11 @@ const DataService = (() => {
     getLatestReading, getAllReadings,
     getFaultReports, reportFault, resolveFaultReport,
     getMaintenanceRecords, addMaintenanceRecord, updateMaintenanceRecord,
-    getNotifications, markNotificationRead, getUnreadCount,
+    getNotifications, markNotificationRead, markAllNotificationsRead, getUnreadCount,
     getUsers, getUserByEmail, getUserById, getUserByAuthUid, setAuthUid, getAuthz,
     addUser, deactivateUser, updateUser,
     getTotalKwhToday, getMonthlyEnergy,
+    getManilaMonthKey,
     getSystemConfig, updateSystemConfig
   };
 })();

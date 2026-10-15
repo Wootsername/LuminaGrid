@@ -1,0 +1,13 @@
+# ---- dependencies (never committed) ----
+node_modules/
+
+# ---- Firebase Admin credentials — NEVER commit private keys ----
+serviceAccountKey.json
+*serviceAccount*.json
+*service-account*.json
+backend/serviceAccountKey.json
+.env
+.env.*
+
+# ---- logs / misc ----
+*.log

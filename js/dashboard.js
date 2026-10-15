@@ -11,18 +11,6 @@ paintUserChip();
 wireLogout();
 gateNavByRole(currentRole);
 
-// Step 13: the two simulation buttons perform privileged Firebase writes
-// (fault_report creation, streetlight status, notification fan-out). Under the
-// candidate hardened rules only admin/electrician sessions may perform them,
-// so finance sessions never trigger a permission-denied write. The fault
-// resolve controls further down were already role-guarded.
-if (currentRole !== "admin" && currentRole !== "electrician") {
-  ["simulateFaultsBtn", "simulateHeartbeatBtn"].forEach((id) => {
-    const btn = document.getElementById(id);
-    if (btn) btn.style.display = "none";
-  });
-}
-
 // ---------- Map init ----------
 // Frame the full Vicente Rama Ave corridor -- Ramon Duterte St corner in the
 // south up to Golden Success College in the north -- so every node is visible
@@ -207,14 +195,26 @@ async function showNodeDetail(streetlightId) {
       typeof reading.power_consumption === "number" ? reading.power_consumption.toFixed(1) : "—";
     // Digital LDR: 0 = daylight, 1 = nighttime — not a lux value.
     document.getElementById("detailAmbient").textContent = ldrLabel(reading.ambient_light);
+    const ldrCode = document.getElementById("detailAmbientCode");
+    if (ldrCode) {
+      ldrCode.textContent = (reading.ambient_light === 0 || reading.ambient_light === 1)
+        ? `${reading.ambient_light} = ${ldrLabel(reading.ambient_light)}`
+        : "0 = Daylight · 1 = Night";
+    }
   } else {
     ["detailCurrent", "detailVoltage", "detailEnergy", "detailAmbient"].forEach(id => {
       document.getElementById(id).textContent = "—";
     });
+    const ldrCodeEmpty = document.getElementById("detailAmbientCode");
+    if (ldrCodeEmpty) ldrCodeEmpty.textContent = "0 = Daylight · 1 = Night";
   }
 
-  // Info table
-  document.getElementById("detailNodeIdInfo").textContent = node.node_id || "—";
+  // Info table — Firebase streetlight records often carry no node_id, so fall
+  // back to a stable DISPLAY-ONLY id derived from streetlight_id (NODE-001,
+  // NODE-002, ...). This is never written back to Firebase; if a stored
+  // node_id exists it always wins.
+  document.getElementById("detailNodeIdInfo").textContent =
+    node.node_id || ("NODE-" + String(node.streetlight_id).padStart(3, "0"));
   document.getElementById("detailPoleNo").textContent = node.pole_number;
   document.getElementById("detailLocationInfo").textContent = node.location || node.barangay;
   document.getElementById("detailCoords").textContent = node.latitude.toFixed(5) + ", " + node.longitude.toFixed(5);
@@ -314,44 +314,6 @@ async function resolveNodeFault(streetlightId) {
   }
   await safeRefresh();
 }
-
-// ---------- Simulate faults ----------
-document.getElementById("simulateFaultsBtn").addEventListener("click", async () => {
-  if (currentRole !== "admin" && currentRole !== "electrician") {
-    alert("Only Admin or Electrician can simulate faults.");
-    return;
-  }
-  const nodes = await DataService.getStreetlights();
-  const activeNodes = nodes.filter(n => n.status === "Active");
-  if (activeNodes.length === 0) {
-    alert("No active nodes to simulate faults on.");
-    return;
-  }
-  // Pick the first active node and file a full fault report against it.
-  // reportFault() creates the Pending fault, flips the node to Faulty, and
-  // fires a "Fault Alert" notification to every active user -- so the fault
-  // banner, Fault Records, and Notifications pages all light up at once.
-  const target = activeNodes[0];
-  await DataService.reportFault(target.streetlight_id);
-  await safeRefresh();
-});
-
-// ---------- Simulate heartbeat (power restore / auto-recovery demo) ----------
-document.getElementById("simulateHeartbeatBtn").addEventListener("click", async () => {
-  if (currentRole !== "admin" && currentRole !== "electrician") {
-    alert("Only Admin or Electrician can run the heartbeat simulation.");
-    return;
-  }
-  const nodes = await DataService.getStreetlights();
-  const offlineNodes = nodes.filter(n => n.status === "Offline");
-  if (offlineNodes.length === 0) {
-    alert("All nodes are currently ONLINE. Nothing to recover — pick a node and simulate a power outage (stale last_seen) to test blackout recovery.");
-    return;
-  }
-  // Fresh heartbeat on the first offline node; it flips back to ONLINE for free.
-  await DataService.tickHeartbeat(offlineNodes[0].streetlight_id);
-  await safeRefresh();
-});
 
 // ---------- Real hardware fault evaluation (STEP 14F) ----------
 // The ESP32 classifies its own local state and sends SMS alerts itself; this

@@ -95,10 +95,6 @@
         <div id="nodeListView">
           <div class="side-panel-header">
             <h3>Streetlight Nodes</h3>
-            <div class="side-panel-header-actions">
-              <button class="btn-heartbeat" id="simulateHeartbeatBtn" title="Simulate power returning -- node auto-recovers to ONLINE">Simulate Power</button>
-              <button class="btn-simulate" id="simulateFaultsBtn">Simulate Faults</button>
-            </div>
           </div>
           <div class="node-list" id="nodeList">
             <div class="empty-state"><strong>Loading...</strong></div>
@@ -134,10 +130,10 @@
               <div class="sensor-value" id="detailEnergy">—</div>
               <div class="sensor-unit">W</div>
             </div>
-            <div class="sensor-item">
+            <div class="sensor-item sensor-item-ldr">
               <div class="sensor-label">Digital LDR</div>
               <div class="sensor-value" id="detailAmbient">—</div>
-              <div class="sensor-unit">0 = Daylight · 1 = Night</div>
+              <div class="sensor-unit" id="detailAmbientCode">0 = Daylight · 1 = Night</div>
             </div>
           </div>
 

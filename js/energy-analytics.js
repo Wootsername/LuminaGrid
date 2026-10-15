@@ -13,22 +13,36 @@ let energyChart;
 let selectedExportFormat = "spreadsheet";
 let selectedTimeframe = "monthly";
 
+// Short month name for a "YYYY-MM" key.
+function monthLabel(key) {
+  const [y, m] = key.split("-");
+  return new Date(Number(y), Number(m) - 1, 1).toLocaleString("en-US", { month: "short" });
+}
+
+// Populate the chart from the REAL monthly aggregate. Only months the backend
+// has actually written (numeric total_kwh AND a nodes map) are shown; seeded
+// demo months are excluded so no fabricated bars are rendered.
+function updateChart(monthly) {
+  if (!energyChart) return;
+  const realMonths = Object.entries(monthly || {})
+    .filter(([, rec]) => rec && typeof rec.total_kwh === "number" && rec.nodes)
+    .sort(([a], [b]) => (a < b ? -1 : a > b ? 1 : 0));
+  energyChart.data.labels = realMonths.map(([key]) => monthLabel(key));
+  energyChart.data.datasets[0].data = realMonths.map(([, rec]) => Number(rec.total_kwh.toFixed(2)));
+  energyChart.update();
+}
+
 function initChart() {
   const ctx = document.getElementById("energyChart").getContext("2d");
 
   energyChart = new Chart(ctx, {
     type: "bar",
     data: {
-      labels: ["January", "February", "March", "April"],
+      labels: [],
       datasets: [{
         label: "Energy Consumption (kWh)",
-        data: [60, 45, 78, 30],
-        backgroundColor: [
-          "#0F172A", // Dark navy (January)
-          "#FDE68A", // Soft amber/yellow (February)
-          "#EA580C", // Bright orange (March)
-          "#16A34A"  // Green (April)
-        ],
+        data: [],
+        backgroundColor: "#1D4E89",
         borderRadius: 4,
         barThickness: 36
       }]
@@ -51,9 +65,7 @@ function initChart() {
         },
         y: {
           min: 0,
-          max: 80,
           ticks: {
-            stepSize: 20,
             color: "#64748B",
             font: { family: "Poppins", size: 11 }
           },
@@ -65,21 +77,41 @@ function initChart() {
 }
 
 async function loadReportData() {
-  const totalFaults = 25; // Matching Figure 28
-  const resolvedFaults = 20; // Matching Figure 28
-  const pendingFaults = 20; // Matching Figure 28
+  // Fault summary from LIVE Firebase fault_report data (no hardcoded 25/20/20).
+  const faults = await DataService.getFaultReports();
+  const totalFaults = faults.length;
+  const resolvedFaults = faults.filter((f) => f.status === "Resolved").length;
+  const pendingFaults = faults.filter((f) => f.status === "Pending").length;
 
   document.getElementById("sumTotalFaults").textContent = totalFaults;
   document.getElementById("sumResolvedFaults").textContent = resolvedFaults;
   document.getElementById("sumPendingFaults").textContent = pendingFaults;
 
   const monthly = await DataService.getMonthlyEnergy();
-  const latestMonth = monthly["2026-08"] || { total_kwh: 163.3, cost: 2219.0 };
 
-  document.getElementById("statTotalKwh").textContent = latestMonth.total_kwh.toFixed(1);
-  document.getElementById("statMonthlyCost").textContent = latestMonth.cost.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  // Energy metrics come from the trusted backend aggregate for the CURRENT
+  // Philippine (Asia/Manila) billing month — not a hardcoded demo month.
+  // cost is recomputed from the configured tariff so the figure is trustworthy.
+  const config = await DataService.getSystemConfig();
+  const ratePerKwh =
+    typeof config.energy_rate_per_kwh === "number"
+      ? config.energy_rate_per_kwh
+      : 13.60;
 
-  document.getElementById("statAvgNode").textContent = "41.1";
+  const monthKey = DataService.getManilaMonthKey();
+  updateChart(monthly);
+  const latestMonth = monthly[monthKey] || { total_kwh: 0, cost: 0 };
+
+  const totalKwh = latestMonth.total_kwh || 0;
+  // Average over nodes that actually reported energy this month.
+  const nodeMap = latestMonth.nodes || {};
+  const reportingCount = Object.keys(nodeMap).length;
+  const avgNode = reportingCount > 0 ? totalKwh / reportingCount : 0;
+
+  document.getElementById("statTotalKwh").textContent = totalKwh.toFixed(1);
+  document.getElementById("statMonthlyCost").textContent = (totalKwh * ratePerKwh).toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+  document.getElementById("statAvgNode").textContent = avgNode.toFixed(1);
 }
 
 const exportModal = document.getElementById("exportModal");

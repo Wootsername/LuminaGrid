@@ -119,7 +119,8 @@
       <div class="nav-links" id="navLinks">
         <a href="dashboard.html" data-roles="admin,electrician,finance"><span class="nav-icon">📍</span> Dashboard</a>
         <a href="energy_data.html" class="active" data-roles="admin,finance"><span class="nav-icon">⚡</span> Energy</a>
-        <a href="notifications.html" data-roles="admin,electrician,finance"><span class="nav-icon">🔔</span> Notification</a>
+        <a href="notifications.html" data-roles="admin,electrician,finance"><span class="nav-icon">🔔</span>
+          Notification</a>
         <a href="energy-analytics.html" data-roles="admin,finance"><span class="nav-icon">📊</span> Report</a>
         <a href="fault-records.html" data-roles="admin,electrician"><span class="nav-icon">📋</span> History</a>
         <a href="node-management.html" data-roles="admin"><span class="nav-icon" aria-hidden="true"></span> Admin</a>
@@ -137,91 +138,93 @@
     </aside>
 
     <main class="app-content">
-    <div class="page-wrap energy-page">
+      <div class="page-wrap energy-page">
 
-      <!-- Page header -->
-      <div class="page-header page-header-card">
-        <div>
-          <h2>Energy</h2>
-          <p class="subtitle">Consumption, active status, and estimated cost across all monitoring nodes —
-            Guadalupe, Cebu City</p>
-        </div>
-        <div class="billing-period" aria-label="Current billing period">
-          <span class="billing-period-label">Billing period</span>
-          <span class="billing-period-value" id="billingPeriod">August 2026</span>
-        </div>
-      </div>
-
-      <!-- KPI row: 4 stat cards -->
-      <div class="kpi-row energy-kpi-row">
-        <div class="kpi-card">
-          <div class="energy-kpi-label">Total Consumption</div>
-          <div class="energy-metric-row">
-            <div class="energy-kpi-icon energy-icon-consumption" aria-label="Total consumption"></div>
-            <div class="energy-kpi-value"><span id="statTotalKwh">—</span><span class="energy-kpi-unit">kWh</span></div>
+        <!-- Page header -->
+        <div class="page-header page-header-card">
+          <div>
+            <h2>Energy</h2>
+            <p class="subtitle">Consumption, active status, and estimated cost across all monitoring nodes —
+              Guadalupe, Cebu City</p>
+          </div>
+          <div class="billing-period" aria-label="Current billing period">
+            <span class="billing-period-label">Billing period</span>
+            <span class="billing-period-value" id="billingPeriod">—</span>
           </div>
         </div>
 
-        <div class="kpi-card">
-          <div class="energy-kpi-label">Average / Node</div>
-          <div class="energy-metric-row">
-            <div class="energy-kpi-icon energy-icon-average" aria-label="Average per node"></div>
-            <div class="energy-kpi-value"><span id="statAvgNode">—</span><span class="energy-kpi-unit">kWh</span></div>
+        <!-- KPI row: 4 stat cards -->
+        <div class="kpi-row energy-kpi-row">
+          <div class="kpi-card">
+            <div class="energy-kpi-label">Total Consumption</div>
+            <div class="energy-metric-row">
+              <div class="energy-kpi-icon energy-icon-consumption" aria-label="Total consumption"></div>
+              <div class="energy-kpi-value"><span id="statTotalKwh">—</span><span class="energy-kpi-unit">kWh</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="energy-kpi-label">Average / Reporting Node</div>
+            <div class="energy-metric-row">
+              <div class="energy-kpi-icon energy-icon-average" aria-label="Average per node"></div>
+              <div class="energy-kpi-value"><span id="statAvgNode">—</span><span class="energy-kpi-unit">kWh</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="energy-kpi-label">Est. Monthly Cost</div>
+            <div class="energy-metric-row">
+              <div class="energy-kpi-icon energy-icon-cost" aria-label="Estimated monthly cost"></div>
+              <div class="energy-kpi-value" id="statMonthlyCost">—</div>
+            </div>
+          </div>
+
+          <div class="kpi-card">
+            <div class="energy-kpi-label">Active Lights</div>
+            <div class="energy-metric-row">
+              <div class="energy-kpi-icon energy-icon-active" aria-label="Active lights"></div>
+              <div class="energy-kpi-value"><span id="statActiveLights">—</span></div>
+            </div>
           </div>
         </div>
 
-        <div class="kpi-card">
-          <div class="energy-kpi-label">Est. Monthly Cost</div>
-          <div class="energy-metric-row">
-            <div class="energy-kpi-icon energy-icon-cost" aria-label="Estimated monthly cost"></div>
-            <div class="energy-kpi-value" id="statMonthlyCost">—</div>
+        <!-- Consumption by Node -->
+        <div class="card energy-section-card energy-node-card">
+          <div class="energy-card-header">
+            <h2>Consumption by Node (kWh)</h2>
+          </div>
+          <div class="energy-card-body" id="nodeBarList">
+            <!-- rows injected by js/energy-data.js -->
           </div>
         </div>
 
-        <div class="kpi-card">
-          <div class="energy-kpi-label">Active Lights</div>
-          <div class="energy-metric-row">
-            <div class="energy-kpi-icon energy-icon-active" aria-label="Active lights"></div>
-            <div class="energy-kpi-value"><span id="statActiveLights">2/4</span></div>
+        <!-- Detailed Breakdown -->
+        <div class="card energy-section-card energy-breakdown-card">
+          <div class="energy-card-header">
+            <h2>Detailed Breakdown</h2>
+          </div>
+          <div class="energy-card-body energy-table-wrap" style="overflow-x:auto;">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Node</th>
+                  <th>Location</th>
+                  <th>Status</th>
+                  <th>Power (kW)</th>
+                  <th>Energy (kWh)</th>
+                  <th>Est. Cost (₱)</th>
+                </tr>
+              </thead>
+              <tbody id="breakdownBody">
+                <!-- rows injected by js/energy-data.js -->
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
 
-      <!-- Consumption by Node -->
-      <div class="card energy-section-card energy-node-card">
-        <div class="energy-card-header">
-          <h2>Consumption by Node (kWh)</h2>
-        </div>
-        <div class="energy-card-body" id="nodeBarList">
-          <!-- rows injected by js/energy-data.js -->
-        </div>
       </div>
-
-      <!-- Detailed Breakdown -->
-      <div class="card energy-section-card energy-breakdown-card">
-        <div class="energy-card-header">
-          <h2>Detailed Breakdown</h2>
-        </div>
-        <div class="energy-card-body energy-table-wrap" style="overflow-x:auto;">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Node</th>
-                <th>Location</th>
-                <th>Status</th>
-                <th>Power (kW)</th>
-                <th>Energy (kWh)</th>
-                <th>Est. Cost (₱)</th>
-              </tr>
-            </thead>
-            <tbody id="breakdownBody">
-              <!-- rows injected by js/energy-data.js -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-    </div>
 
     </main>
   </div>

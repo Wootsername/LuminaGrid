@@ -6815,6 +6815,84 @@ select:focus-visible {
   }
 }
 
+/* ============================================================
+   Admin — Prototype Operating Settings (read-only firmware thresholds)
+   ============================================================ */
+.proto-threshold-list {
+  border: 1px solid var(--gray-200, #E2E8F0);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-top: 14px;
+}
+
+.proto-threshold-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 9px 12px;
+  font-size: 0.83rem;
+  background: var(--gray-50, #F8FAFC);
+}
+
+.proto-threshold-row+.proto-threshold-row {
+  border-top: 1px solid var(--gray-100, #F1F5F9);
+}
+
+.proto-threshold-row span {
+  color: var(--gray-600, #475569);
+}
+
+.proto-threshold-row strong {
+  font-family: var(--font-mono, ui-monospace, monospace);
+  color: var(--gray-900, #0F172A);
+  text-align: right;
+}
+
+.proto-note {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--gray-500, #64748B);
+  margin-top: 10px;
+}
+
+/* ============================================================
+   Admin — Register Node form feedback (validation + success toast)
+   ============================================================ */
+.form-error {
+  color: #B91C1C;
+  font-size: 0.82rem;
+  line-height: 1.45;
+  margin-top: 12px;
+}
+
+.lumina-toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 2000;
+  background: var(--navy-900, #0F1E3D);
+  color: #fff;
+  border-left: 4px solid var(--green, #22C55E);
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-family: var(--font-ui, sans-serif);
+  box-shadow: 0 8px 24px rgba(15, 30, 61, 0.28);
+  animation: lumina-toast-in 0.25s ease;
+}
+
+@keyframes lumina-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
 /* Final Notification layout rules after legacy page styles. */
 .notification-shell .notif-panel {
   width: 100%;

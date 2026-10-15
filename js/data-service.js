@@ -36,6 +36,8 @@ const DataService = (() => {
   // Effective status rule:
   //   1. No heartbeat within heartbeat_timeout_minutes  -> "Offline" (transient, auto-recovers)
   //   2. Pending hardware fault or stored "Faulty" flag  -> "Faulty" (needs manual Resolve)
+  //   2b. Stored "Offline" with NO last_seen ever        -> "Offline" (registered node whose
+  //       device has not reported a heartbeat yet — must not count as Working)
   //   3. Otherwise                                      -> "Active"
   // "Node Offline" fault reports are treated as connectivity (rule 1), never
   // as a hardware defect, so a resumed heartbeat clears them automatically.
@@ -56,7 +58,17 @@ const DataService = (() => {
       const pendingHardware = Object.values(data.fault_reports || {}).some(
         (r) => r.streetlight_id === node.streetlight_id && r.status === "Pending" && r.fault_type !== "Node Offline"
       );
-      status = pendingHardware || node.status === "Faulty" ? "Faulty" : "Active";
+      if (pendingHardware || node.status === "Faulty") {
+        status = "Faulty";
+      } else if (node.status === "Offline" && !node.last_seen) {
+        // Newly registered node: stored Offline and the device has never
+        // heartbeated. Keep Offline (rule 2b) instead of the old else-branch
+        // default of "Active", which would have counted a brand-new node as
+        // Working before any real telemetry exists.
+        status = "Offline";
+      } else {
+        status = "Active";
+      }
     }
     return Object.assign({}, node, { status });
   }

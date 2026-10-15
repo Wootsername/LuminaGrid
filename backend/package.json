@@ -8,7 +8,9 @@
   "scripts": {
     "energy": "node energy-worker.js",
     "energy:watch": "node energy-worker.js --watch",
-    "test": "node test/energy-service.test.js"
+    "fault": "node fault-worker.js",
+    "fault:watch": "node fault-worker.js --watch",
+    "test": "node test/energy-service.test.js && node test/fault-service.test.js && node test/fault-worker.test.js"
   },
   "dependencies": {
     "firebase-admin": "^12.7.0"

@@ -99,31 +99,46 @@
               class="no-icon"></div>
           <div class="field"><label>Longitude</label><input type="text" id="longitude" value="123.89010" required
               class="no-icon"></div>
+          <p id="nodeFormError" class="form-error" hidden></p>
           <div style="display:flex; gap:10px; margin-top:16px;">
             <button type="button" class="btn btn-secondary" id="cancelNodeBtn">Cancel</button>
-            <button type="submit" class="btn btn-amber">Save Node</button>
+            <button type="submit" class="btn btn-amber" id="saveNodeBtn">Save Node</button>
           </div>
         </form>
       </div>
     </div>
 
-    <!-- Operating Thresholds Modal -->
+    <!-- Prototype Operating Settings Modal (read-only firmware thresholds + heartbeat) -->
     <div class="modal-backdrop" id="configModal">
       <div class="card" style="max-width:420px;">
-        <h2>Set Operating Thresholds</h2>
-        <p class="sub">Configure automated dusk/dawn & fault detection thresholds.</p>
+        <h2>Prototype Operating Settings</h2>
+        <p class="sub">Current monitoring thresholds and node connectivity settings.</p>
+
+        <!-- READ-ONLY effective hardware thresholds. These mirror the FIXED
+             ESP32 firmware constants (3.0 V power-fault cutoff, 0.50 A
+             bulb-fault cutoff, digital LDR 0/1) — the device cannot be
+             reconfigured from the website, so these are documentation, not
+             controls. Legacy system_config fields (voltage_threshold_low = 200
+             mains-era, dusk_lux_threshold / dawn_lux_threshold lux, and the
+             current_threshold_high/low pair) remain stored in Firebase for
+             compatibility but are deliberately NOT presented as active
+             behavior: the hardware evaluator never reads them. -->
+        <div class="proto-threshold-list">
+          <div class="proto-threshold-row"><span>Power Fault Voltage Cutoff</span><strong>3.0 V</strong></div>
+          <div class="proto-threshold-row"><span>Bulb Fault Current Cutoff</span><strong>0.50 A</strong></div>
+          <div class="proto-threshold-row"><span>Light Sensor Mode</span><strong>Digital LDR</strong></div>
+          <div class="proto-threshold-row"><span>Light Sensor States</span><strong>0 = Daylight · 1 = Night</strong></div>
+        </div>
+        <p class="proto-note">Fault thresholds are fixed in the current prototype firmware. They cannot be
+          changed from the dashboard.</p>
+
         <form id="configForm">
-          <div class="field"><label>High Current Threshold (A)</label><input type="number" step="0.01"
-              id="cfgHighCurrent" value="0.50" required class="no-icon"></div>
-          <div class="field"><label>Low Current Threshold (A)</label><input type="number" step="0.01" id="cfgLowCurrent"
-              value="0.10" required class="no-icon"></div>
-          <div class="field"><label>Dusk Lux Threshold (lux)</label><input type="number" id="cfgDuskLux" value="50"
-              required class="no-icon"></div>
-          <div class="field"><label>Dawn Lux Threshold (lux)</label><input type="number" id="cfgDawnLux" value="150"
-              required class="no-icon"></div>
+          <div class="field"><label>Heartbeat Timeout (minutes)</label><input type="number" id="cfgHeartbeat"
+              min="1" max="60" step="1" value="10" required class="no-icon"></div>
+          <p id="configFormError" class="form-error" hidden></p>
           <div style="display:flex; gap:10px; margin-top:16px;">
             <button type="button" class="btn btn-secondary" id="cancelConfigBtn">Cancel</button>
-            <button type="submit" class="btn btn-amber">Save Thresholds</button>
+            <button type="submit" class="btn btn-amber" id="saveConfigBtn">Save Settings</button>
           </div>
         </form>
       </div>
@@ -138,6 +153,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.13.0/firebase-database-compat.js"></script>
   <script src="js/firebase-config.js"></script>
   <script src="js/data-service.js"></script>
+  <script src="js/node-registration.js"></script>
   <script src="js/utils.js"></script>
   <script src="js/profile.js"></script>
   <script src="js/node-management.js"></script>

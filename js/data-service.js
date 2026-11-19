@@ -20,57 +20,13 @@
 const DataService = (() => {
   // ---------- Streetlights ----------
 
-  // Historical test-clock helper from the mock era: it returned the newest
-  // last_seen among data.streetlights, or wall-clock now when none exist.
-  // Step 12 removed the mock callers; _enrich() still calls it, but its
-  // Firebase enrichment contexts never contain streetlights, so it now
-  // always resolves to the real current time.
-  function _mockNow(data) {
-    const vals = Object.values(data.streetlights || {})
-      .map((s) => s.last_seen && new Date(s.last_seen).getTime())
-      .filter((t) => !isNaN(t));
-    if (vals.length === 0) return new Date().toISOString();
-    return new Date(Math.max(...vals)).toISOString();
-  }
+  const AUTOMATIC_FAULT_TYPES = ["Power Fault", "Bulb Fault", "Node Offline"];
+  function isAutomaticFaultType(type) { return AUTOMATIC_FAULT_TYPES.includes(type); }
 
-  // Effective status rule:
-  //   1. No heartbeat within heartbeat_timeout_minutes  -> "Offline" (transient, auto-recovers)
-  //   2. Pending hardware fault or stored "Faulty" flag  -> "Faulty" (needs manual Resolve)
-  //   2b. Stored "Offline" with NO last_seen ever        -> "Offline" (registered node whose
-  //       device has not reported a heartbeat yet — must not count as Working)
-  //   3. Otherwise                                      -> "Active"
-  // "Node Offline" fault reports are treated as connectivity (rule 1), never
-  // as a hardware defect, so a resumed heartbeat clears them automatically.
-  function _enrich(node, data) {
-    const cfg = data.system_config || {};
-    if (!node) return null;
-    const timeoutMin = cfg.heartbeat_timeout_minutes || 10;
-    const nowMs = new Date(_mockNow(data)).getTime();
-    const seenMs = node.last_seen ? new Date(node.last_seen).getTime() : NaN;
-
-    let status;
-    // Only apply the heartbeat/offline check when last_seen is present and
-    // parseable.  Firebase streetlight records may not carry last_seen (it is
-    // not part of the ERD), so a missing value must never force Offline.
-    if (node.last_seen && !isNaN(seenMs) && nowMs - seenMs > timeoutMin * 60 * 1000) {
-      status = "Offline";
-    } else {
-      const pendingHardware = Object.values(data.fault_reports || {}).some(
-        (r) => r.streetlight_id === node.streetlight_id && r.status === "Pending" && r.fault_type !== "Node Offline"
-      );
-      if (pendingHardware || node.status === "Faulty") {
-        status = "Faulty";
-      } else if (node.status === "Offline" && !node.last_seen) {
-        // Newly registered node: stored Offline and the device has never
-        // heartbeated. Keep Offline (rule 2b) instead of the old else-branch
-        // default of "Active", which would have counted a brand-new node as
-        // Working before any real telemetry exists.
-        status = "Offline";
-      } else {
-        status = "Active";
-      }
-    }
-    return Object.assign({}, node, { status });
+  // Status is persisted by the trusted worker. Reading a page cannot advance
+  // the automatic lifecycle or optimistically declare a node recovered.
+  function _enrich(node) {
+    return node ? { ...node, status: node.status || "Offline" } : null;
   }
 
   // Compose the canonical "Fault Alert" message for a fault report + node pair.
@@ -123,10 +79,8 @@ const DataService = (() => {
     return `Fault ${fault ? fault.fault_id : "—"} at Node ${label} has been resolved. The node is back online.`;
   }
 
-  // (Step 12 retired _dispatchResolutionNotifications(): the mock
-  // tickHeartbeat path is gone and every Resolution notification is now
-  // emitted exclusively by resolveFaultReport() through
-  // _dispatchFirebaseNotifications().)
+  // Automatic fault fan-out is owned by the trusted worker. This dispatcher
+  // remains for manual/non-automatic fault resolution only.
 
   // Highest numeric portion among existing Firebase notification ids (n001,
   // n002, ...). Step 13 REVISION: ids come from an internal Firebase counter
@@ -187,32 +141,10 @@ const DataService = (() => {
   }
 
   async function getStreetlights() {
-    // Step 10: streetlight, fault_report and system_config are read in
-    // parallel straight from Firebase — getStreetlights() no longer touches
-    // data/mock-nodes.json at all (energy_monthly migrated to Firebase in
-    // Step 11, so no data entity reads mock-nodes.json anymore).
-    const [snapshot, faultsSnap, configSnap] = await Promise.all([
-      db.ref("streetlight").once("value"),
-      db.ref("fault_report").once("value"),
-      db.ref("system_config").once("value")
-    ]);
-    const raw = snapshot.val() || {};
-
-    // Firebase numeric keys (1, 2, 3, 4) may produce an array-like object
-    // with an empty index 0 — filter(Boolean) strips those nulls out.
-    const nodes = Object.values(raw)
-      .filter(Boolean)
-      .map((node) => ({
-        ...node,
-        streetlight_id: String(node.streetlight_id)
-      }));
-
-    const enrichData = {
-      fault_reports: faultsSnap.val() || {},
-      system_config: configSnap.val() || {}
-    };
-
-    return nodes.map((n) => _enrich(n, enrichData));
+    // Stored status is worker-owned; listing nodes needs no fault/config reads.
+    const snapshot = await db.ref("streetlight").once("value");
+    return Object.values(snapshot.val() || {}).filter(Boolean).map(node =>
+      _enrich({ ...node, streetlight_id: String(node.streetlight_id) }));
   }
 
   async function getStreetlight(streetlightId) {
@@ -269,114 +201,40 @@ const DataService = (() => {
     return node;
   }
 
-  // Simulate the ESP32 node reporting a fresh heartbeat (power restored).
-  // Step 12: refreshes last_seen on the Firebase streetlight record with a
-  // real timestamp (the old mock test-clock only existed for the fixed mock
-  // timeline) and resolves any pending "Node Offline" fault through the
-  // existing resolveFaultReport() lifecycle — the single source of truth for
-  // fault status changes, resolved_at, restoring streetlight Active and
-  // emitting exactly one Resolution notification per active user (its
-  // wasPending guard prevents duplicates on repeat recoveries).
-  async function tickHeartbeat(streetlightId) {
-    const nodeSnap = await db.ref("streetlight/" + streetlightId).once("value");
-    const node = nodeSnap.val();
-    if (!node) return null;
-
-    const now = new Date().toISOString();
-    const patch = { last_seen: now };
-    if (node.status !== "Faulty") patch.status = "Active";
-    await db.ref("streetlight/" + streetlightId).update(patch);
-
-    // Reconnect recovery: resolve every pending "Node Offline" fault for this
-    // node via the shared Firebase fault lifecycle (no local status writes).
-    const faultsSnap = await db.ref("fault_report").once("value");
-    const offlineFaultIds = Object.entries(faultsSnap.val() || {})
-      .filter(([, r]) =>
-        r &&
-        String(r.streetlight_id) === String(streetlightId) &&
-        r.status === "Pending" &&
-        r.fault_type === "Node Offline"
-      )
-      .map(([key]) => key);
-    for (const faultId of offlineFaultIds) {
-      await resolveFaultReport(faultId);
-    }
-
-    // Same return shape as before: the enriched node (live faults + config).
-    return getStreetlight(streetlightId);
-  }
-
-  // Force-clear a stored hardware defect (used when a simulated fault has no
-  // matching fault report yet, or after a manual inspection confirms the node).
-  // Step 12: operates entirely on Firebase. Pending "Node Offline" fault(s)
-  // are resolved through the existing resolveFaultReport() lifecycle; other
-  // pending hardware faults are preserved — the stored status is only set to
-  // Active when no unresolved hardware defect remains, so this can never
-  // force an unresolved bulb/current fault to Active (while one is pending
-  // the stored Faulty flag stays and _enrich keeps deriving Faulty).
-  async function markNodeActive(streetlightId) {
-    const nodeSnap = await db.ref("streetlight/" + streetlightId).once("value");
-    const node = nodeSnap.val();
-    if (!node) return null;
-
-    const faultsSnap = await db.ref("fault_report").once("value");
-    const faults = Object.entries(faultsSnap.val() || {});
-
-    // Connectivity recovery: resolve pending "Node Offline" fault(s) only.
-    const offlineFaultIds = faults
-      .filter(([, r]) =>
-        r &&
-        String(r.streetlight_id) === String(streetlightId) &&
-        r.status === "Pending" &&
-        r.fault_type === "Node Offline"
-      )
-      .map(([key]) => key);
-    for (const faultId of offlineFaultIds) {
-      await resolveFaultReport(faultId);
-    }
-
-    // Preserve any pending hardware fault (never force it Active).
-    const hardwarePending = faults.some(
-      ([, r]) =>
-        r &&
-        String(r.streetlight_id) === String(streetlightId) &&
-        r.status === "Pending" &&
-        r.fault_type !== "Node Offline"
-    );
-    if (!hardwarePending) {
-      await db.ref("streetlight/" + streetlightId + "/status").set("Active");
-    }
-
-    // Same return shape as before: the enriched node (live faults + config).
-    return getStreetlight(streetlightId);
-  }
-
   // ---------- Sensor readings ----------
-  // Newest reading is decided ONLY by the record's `timestamp` field.
-  // Reading keys look like r_<millis>_<random> (e.g. r_76594_adc2c836), so
-  // lexicographical Firebase key order is NOT chronological order and must
-  // never be used here. Records with a missing/unparseable timestamp sort to
-  // the oldest instead of producing NaN comparisons.
+  // Match the trusted worker's UTC-only policy before calling Date.parse:
+  // V8 can interpret legacy uptime-* strings as dates far in the future.
+  const TELEMETRY_ISO_MIN = "2000-01-01T00:00:00.000Z";
+  const TELEMETRY_ISO_MAX = "9999-12-31T23:59:59Z";
+  const { parseTelemetryTimestamp, timestampAge } = TelemetryTime;
+
   async function getLatestReading(streetlightId) {
+    const entry = await getLatestReadingEntry(streetlightId);
+    return entry ? entry.reading : null; // existing public return shape
+  }
+
+  // Include the Firebase key for a dashboard snapshot without changing the row.
+  async function getLatestReadingEntry(streetlightId) {
+    // Filter before limiting so legacy uptime rows cannot hide ISO data.
     const snapshot = await db
       .ref("sensor_reading/" + streetlightId)
+      .orderByChild("timestamp")
+      .startAt(TELEMETRY_ISO_MIN)
+      .endAt(TELEMETRY_ISO_MAX)
+      .limitToLast(20)
       .once("value");
 
-    const raw = snapshot.val() || {};
-
-    const readings = Object.values(raw)
-      .filter(Boolean);
-
-    if (readings.length === 0) {
-      return null;
+    let best = null;
+    for (const [key, reading] of Object.entries(snapshot.val() || {})) {
+      const ms = parseTelemetryTimestamp(reading && reading.timestamp);
+      if (!Number.isFinite(ms) || reading.timestamp < TELEMETRY_ISO_MIN || reading.timestamp > TELEMETRY_ISO_MAX) continue;
+      // Within one second, .123Z sorts BEFORE Z lexically but is newer.
+      // Use parsed time, with the worker's stable key tie-break for ties.
+      if (!best || ms > best.ms || (ms === best.ms && key > best.key)) {
+        best = { key, reading, ms };
+      }
     }
-
-    const tsMs = (reading) => {
-      const ms = Date.parse((reading && reading.timestamp) || "");
-      return isNaN(ms) ? 0 : ms;
-    };
-
-    return readings.sort((a, b) => tsMs(b) - tsMs(a))[0];
+    return best ? { key: best.key, reading: best.reading } : null;
   }
 
   async function getAllReadings() {
@@ -417,6 +275,9 @@ const DataService = (() => {
     const report = snapshot.val();
 
     if (!report) return null;
+    if (isAutomaticFaultType(report.fault_type)) {
+      throw new Error("Automatic fault — resolves when telemetry confirms recovery.");
+    }
 
     // Only a genuine Pending -> Resolved transition may emit a Resolution
     // notification; re-resolving an already Resolved fault must not.
@@ -434,13 +295,17 @@ const DataService = (() => {
     const allFaultsSnap = await db.ref("fault_report").once("value");
     const allFaults = Object.values(allFaultsSnap.val() || {}).filter(Boolean);
     const stillPending = allFaults.some(
-      (r) => String(r.streetlight_id) === String(sid) && r.status === "Pending" && r.fault_type !== "Node Offline"
+      (r) => String(r.streetlight_id) === String(sid) && r.status === "Pending"
     );
 
-    if (!stillPending) {
-      await db.ref("streetlight/" + sid + "/status").set("Active");
-
-      // Node is back to Active -- notify every active user (Firebase).
+    // The worker reconciles stored status, including heartbeat state. Manual
+    // repair must not force an offline node Active or mask an automatic fault.
+    const [heartbeatSnap, configSnap] = await Promise.all([
+      db.ref("streetlight/" + sid).once("value"), db.ref("system_config").once("value")
+    ]);
+    const seenAge = timestampAge((heartbeatSnap.val() || {}).last_seen).effectiveAgeMs;
+    const timeoutMin = Number((configSnap.val() || {}).heartbeat_timeout_minutes) || 10;
+    if (!stillPending && Number.isFinite(seenAge) && seenAge <= timeoutMin * 60000) {
       if (wasPending) {
         try {
           const nodeSnap = await db.ref("streetlight/" + sid).once("value");
@@ -454,98 +319,6 @@ const DataService = (() => {
           console.error("Failed to create Resolution notifications:", err);
         }
       }
-    }
-
-    return report;
-  }
-
-  // Simulation / node-reporting path: mimics the ESP32 firmware filing a
-  // hardware fault. Creates a Pending fault report, persists the "Faulty"
-  // defect flag on the node, and fans out a "Fault Alert" notification to
-  // every active user -- exactly what the seeded dataset models. This is what
-  // the dashboard "Simulate Faults" button calls so the fault banner, Fault
-  // Records, and Notifications pages all reflect the new fault immediately.
-  async function reportFault(streetlightId, overrides = {}) {
-    const node = await getStreetlight(streetlightId);
-    if (!node) return null;
-
-    const latest = await getLatestReading(streetlightId);
-
-    // Next sequential fault id
-    const faultsSnap = await db.ref("fault_report").once("value");
-    const faultNums = Object.keys(faultsSnap.val() || {})
-      .map((id) => parseInt(id.replace(/\D/g, ""), 10))
-      .filter((n) => !isNaN(n));
-    const faultId = "f" + ((faultNums.length ? Math.max(...faultNums) : 500) + 1);
-
-    const templates = [
-      {
-        type: "Bulb Failure",
-        severity: "High",
-        desc: "No current draw detected while light is expected ON (nighttime, LDR confirms dark)."
-      },
-      {
-        type: "Overcurrent",
-        severity: "Medium",
-        desc: "Current draw exceeded threshold of 0.5A. Possible wiring issue."
-      },
-      {
-        type: "Voltage Fluctuation",
-        severity: "Low",
-        desc: "Supply voltage dropped below the configured operating threshold."
-      },
-      {
-        type: "Sensor Malfunction",
-        severity: "Low",
-        desc: "Ambient light sensor reporting inconsistent readings."
-      }
-    ];
-    let tpl;
-    if (latest) {
-      if ((latest.current || 0) <= 0.02 && (latest.ambient_light || 0) < 200) {
-        tpl = templates[0];
-      } else if ((latest.current || 0) > 0.5) {
-        tpl = templates[1];
-      } else {
-        tpl = templates[Math.floor(Math.random() * templates.length)];
-      }
-    } else {
-      tpl = templates[Math.floor(Math.random() * templates.length)];
-    }
-    const faultType = overrides.fault_type || tpl.type;
-    const severity = overrides.severity || tpl.severity;
-    const description = overrides.description || ("Simulated fault — " + tpl.desc);
-
-    const detectedAt = new Date().toISOString();
-
-    const report = {
-      fault_id: faultId,
-      streetlight_id: streetlightId,
-      reading_id: latest ? latest.reading_id : null,
-      fault_type: faultType,
-      description,
-      severity,
-      status: "Pending",
-      detected_at: detectedAt,
-      resolved_at: null
-    };
-
-    // Write report to Firebase
-    await db.ref("fault_report/" + faultId).set(report);
-
-    // Update node status
-    await db.ref("streetlight/" + streetlightId + "/status").set("Faulty");
-
-    // Fan out a "Fault Alert" notification to every active user (Firebase).
-    // A notification failure must not undo the already-persisted fault.
-    try {
-      await _dispatchFirebaseNotifications(
-        report,
-        "Fault Alert",
-        _faultAlertMessage(report, node)
-      );
-    } catch (err) {
-      console.error("Failed to create Fault Alert notifications:", err);
     }
 
     return report;
@@ -641,7 +414,8 @@ const DataService = (() => {
     const isCompleted = updated.repair_status === MAINTENANCE_COMPLETED_STATUS;
     if (!wasCompleted && isCompleted && updated.fault_id) {
       try {
-        await resolveFaultReport(updated.fault_id);
+        const linked = (await db.ref("fault_report/" + updated.fault_id).once("value")).val();
+        if (linked && !isAutomaticFaultType(linked.fault_type)) await resolveFaultReport(updated.fault_id);
       } catch (err) {
         console.error("Failed to resolve fault for completed maintenance record:", err);
       }
@@ -1125,9 +899,9 @@ const DataService = (() => {
   }
 
   return {
-    getStreetlights, getStreetlight, upsertStreetlight, tickHeartbeat, markNodeActive,
-    getLatestReading, getAllReadings,
-    getFaultReports, reportFault, resolveFaultReport,
+    getStreetlights, getStreetlight, upsertStreetlight,
+    getLatestReading, getLatestReadingEntry, getAllReadings, parseTelemetryTimestamp, timestampAge,
+    getFaultReports, resolveFaultReport, isAutomaticFaultType,
     getMaintenanceRecords, addMaintenanceRecord, updateMaintenanceRecord,
     getNotifications, markNotificationRead, markAllNotificationsRead, getUnreadCount,
     getUsers, getUserByEmail, getUserById, getUserByAuthUid, setAuthUid, getAuthz,

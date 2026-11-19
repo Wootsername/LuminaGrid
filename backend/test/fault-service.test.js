@@ -94,6 +94,71 @@ assert(svc.faultAlertMessage({ fault_type: "Bulb Fault", description: "x", stree
 assert(svc.resolutionMessage({ fault_id: "f501", fault_type: "Node Offline", streetlight_id: "1" }, { pole_number: "P-001" })
   .indexOf("is back online. Heartbeat resumed") > 0, "Node Offline resolution wording");
 
+for (const invalid of ["", " ", true, false, [], {}, NaN, Infinity]) {
+  assert(svc.classifyHardwareState(rd(1, invalid, 0.8)) === null, "invalid voltage rejected: " + String(invalid));
+  assert(svc.classifyHardwareState(rd(invalid, 12, 0.8)) === null, "invalid LDR rejected: " + String(invalid));
+}
+assert(!svc.isHardwareTelemetryFresh(rd(1, 12, 0.8, NOW + 16000), node(), NOW), "future sensor rejected");
+assert(!svc.isHardwareTelemetryFresh(rd(1, 12, 0.8), node(new Date(NOW + 16000).toISOString()), NOW), "future heartbeat rejected");
+assert(svc.isHardwareTelemetryFresh(rd(1, 12, 0.8, NOW - 90000), node(), NOW), "exact freshness boundary accepted");
+
+console.log("== strict UTC telemetry timestamps (uptime regression) ==");
+for (const value of ["2026-10-15T18:08:27Z", "2026-10-15T18:08:27.123Z", "2024-02-29T00:00:00Z"]) {
+  assert(svc.parseTelemetryTimestamp(value) === Date.parse(value), "strict parser accepts " + value);
+}
+for (const value of ["uptime-41992", "41992", "", null, undefined, "not-a-date", {}, [],
+  ["2026-10-15T18:08:27Z"], 41992, new Date(NOW), true, " 2026-10-15T18:08:27Z",
+  "2026-10-15T18:08:27Z\n", "2026-10-15", "2026-10-15 18:08:27Z", "2026-10-15T18:08:27",
+  "2026-10-15T18:08:27+00:00", "2026-10-15T18:08:27.1Z", "2026-10-15T18:08:27.1234Z",
+  "2026-02-30T18:08:27Z", "2026-02-29T00:00:00Z", "2026-10-15T24:00:00Z",
+  "2026-10-15T18:08:60Z", "2026-13-01T00:00:00Z"]) {
+  assert(Number.isNaN(svc.parseTelemetryTimestamp(value)), "strict parser rejects " + String(value));
+}
+{
+  const original = Date.parse;
+  let calls = 0;
+  try {
+    // Even an engine that generously parses every string cannot validate uptime.
+    Date.parse = () => { calls++; return NOW; };
+    assert(Number.isNaN(svc.parseTelemetryTimestamp("uptime-41992")), "uptime rejected before Date.parse, even with finite engine result");
+    assert(calls === 0, "invalid structure is never forwarded to Date.parse");
+  } finally { Date.parse = original; }
+}
+assert(!svc.isHardwareTelemetryFresh({ timestamp: "uptime-41992" }, node(), NOW), "uptime sensor is never fresh");
+assert(!svc.isHardwareTelemetryFresh(rd(1, 11.28, 0.22), { last_seen: "uptime-41992" }, NOW), "uptime heartbeat is never fresh");
+assert(svc.heartbeatState({ last_seen: "uptime-41992" }, 10, NOW) === "NEVER_SEEN", "uptime heartbeat is not a wall-clock heartbeat");
+
+
+console.log("== bounded ESP32 clock skew ==");
+assert(svc.CLOCK_SKEW_TOLERANCE_MS === 15000, "shared future tolerance is exactly 15 seconds");
+const skewNow = Date.parse("2026-10-22T06:58:35Z");
+for (const offset of [7000, 14000, 15000, 15001, 16000, 3600000, -30000]) {
+  const timestamp = new Date(skewNow + offset).toISOString();
+  const n = { status: "Active", last_seen: timestamp };
+  const reading = { timestamp, ambient_light: 1, voltage: 11, current: 1 };
+  const accepted = offset <= 15000;
+  const age = svc.timestampAge(timestamp, skewNow);
+  assert(age.rawAgeMs === -offset, "raw age retained: " + offset);
+  assert(accepted ? age.effectiveAgeMs === Math.max(0, -offset) : Number.isNaN(age.effectiveAgeMs),
+    "bounded effective age: " + offset);
+  assert(svc.heartbeatState(n, 10, skewNow) === (accepted ? "OK" : "NEVER_SEEN"), "heartbeat policy: " + offset);
+  assert(svc.isHardwareTelemetryFresh(reading, n, skewNow) === accepted, "both ESP32 timestamps: " + offset);
+  assert(svc.computeDesiredStatus({ node: n, pending: [], heartbeatTimeoutMin: 10, nowMs: skewNow }) ===
+    (accepted ? "Active" : "Offline"), "desired status: " + offset);
+  // Exercise sensor skew separately from heartbeat skew.
+  assert(svc.isHardwareTelemetryFresh(reading, { last_seen: new Date(skewNow).toISOString() }, skewNow) === accepted,
+    "independent sensor skew: " + offset);
+}
+for (const timeout of [2, 10]) {
+  const last_seen = new Date(skewNow - timeout * 60000).toISOString();
+  assert(svc.heartbeatState({ last_seen }, timeout, skewNow) === "OK", "timeout boundary unchanged: " + timeout);
+  assert(svc.heartbeatState({ last_seen }, timeout, skewNow + 1) === "TIMED_OUT", "real timeout: " + timeout);
+  assert(svc.computeDesiredStatus({ node: { last_seen }, pending: [], heartbeatTimeoutMin: timeout, nowMs: skewNow + 1 }) ===
+    "Offline", "real timeout stays Offline: " + timeout);
+}
+assert(svc.isHardwareTelemetryFresh(rd(1, 12, 1, NOW - 90000), node(), NOW), "90-second telemetry boundary unchanged");
+assert(!svc.isHardwareTelemetryFresh(rd(1, 12, 1, NOW - 90001), node(), NOW), "90-second telemetry expiry unchanged");
+
 console.log("\nRESULT: " + pass + " passed, " + fails.length + " failed");
 if (fails.length) {
   fails.forEach((f) => console.log("  FAILED: " + f));

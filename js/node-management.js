@@ -12,21 +12,16 @@ async function renderNodeTable() {
   const tbody = document.getElementById("nodeTableBody");
 
   tbody.innerHTML = nodes.map(n => {
-    // Coordinates are numeric in Firebase but guard against legacy records
-    // without lat/lng so one bad row can never break the whole table.
-    const lat = Number(n.latitude);
-    const lng = Number(n.longitude);
-    const coords = isFinite(lat) && isFinite(lng)
-      ? `${lat.toFixed(5)}, ${lng.toFixed(5)}`
-      : "—";
+    const coordinates = streetlightCoordinates(n);
+    const coords = coordinates ? coordinates.map(value => value.toFixed(5)).join(", ") : "—";
     return `
     <tr>
-      <td><strong>${n.node_id || "LG-0" + n.streetlight_id}</strong></td>
-      <td>${n.pole_number}</td>
-      <td>${n.location || n.barangay}</td>
+      <td><strong>${escapeHtml(n.node_id || "LG-0" + n.streetlight_id)}</strong></td>
+      <td>${escapeHtml(n.pole_number)}</td>
+      <td>${escapeHtml(n.location || n.barangay)}</td>
       <td>${coords}</td>
-      <td>${n.installation_date || "—"}</td>
-      <td><span class="status-pill ${n.status === 'Active' ? 'ok' : n.status === 'Faulty' ? 'fault' : 'offline'}">${n.status === 'Active' ? 'OK' : n.status}</span></td>
+      <td>${escapeHtml(n.installation_date || "—")}</td>
+      <td><span class="status-pill ${n.status === 'Active' ? 'ok' : n.status === 'Faulty' ? 'fault' : 'offline'}">${escapeHtml(n.status === 'Active' ? 'OK' : n.status)}</span></td>
     </tr>
   `;
   }).join("");
@@ -140,7 +135,7 @@ document.getElementById("nodeForm").addEventListener("submit", async (e) => {
 //     by the hardware evaluator (firmware enforces a fixed 0.50 A cutoff).
 // The modal therefore shows those effective firmware thresholds READ-ONLY
 // and exposes exactly one editable website/backend setting:
-// heartbeat_timeout_minutes (drives _enrich()'s Offline derivation).
+// heartbeat_timeout_minutes (worker status and dashboard connection timeout).
 const configModal = document.getElementById("configModal");
 
 function setConfigFormError(message) {
@@ -155,7 +150,7 @@ document.getElementById("configBtn").addEventListener("click", async () => {
   configModal.classList.add("open");
   try {
     const cfg = await DataService.getSystemConfig();
-    // Live Firebase value (expected 10); documented default only when the
+    // Live Firebase value, including fractional minutes; default only when the
     // field is absent or invalid so the input is never blank/nonsensical.
     const minutes = NodeRegistration.parseHeartbeatTimeout(cfg.heartbeat_timeout_minutes);
     document.getElementById("cfgHeartbeat").value = minutes != null ? minutes : 10;
@@ -179,7 +174,7 @@ document.getElementById("configForm").addEventListener("submit", async (e) => {
     document.getElementById("cfgHeartbeat").value
   );
   if (minutes == null) {
-    setConfigFormError("Heartbeat Timeout must be a whole number between 1 and 60 minutes.");
+    setConfigFormError("Heartbeat Timeout must be between 0.25 and 60 minutes.");
     return;
   }
 

@@ -48,9 +48,24 @@ function makeDb(store) {
   const setCounts = {};
   return {
     ref(p) {
+      const query = {};
       return {
+        orderByChild(field) { query.field = field; return this; },
+        startAt(value) { query.min = value; return this; },
+        endAt(value) { query.max = value; return this; },
+        limitToLast(count) { query.limit = count; return this; },
         async once() {
-          const v = readNode(p);
+          let v = readNode(p);
+          if (query.field && v !== null) {
+            const rows = Object.entries(v).filter(([, row]) =>
+              typeof row?.[query.field] === "string" &&
+              row[query.field] >= query.min && row[query.field] <= query.max);
+            rows.sort(([ak, a], [bk, b]) => {
+              const av = a[query.field], bv = b[query.field];
+              return av < bv ? -1 : av > bv ? 1 : ak < bk ? -1 : ak > bk ? 1 : 0;
+            });
+            v = Object.fromEntries(rows.slice(-query.limit));
+          }
           return {
             val: () => (v === null ? null : JSON.parse(JSON.stringify(v))),
             exists: () => v !== null
@@ -197,6 +212,7 @@ const NodeRegistration = require(path.join(root, "js", "node-registration.js"));
   };
   vm.createContext(context);
   const dsSrc = fs.readFileSync(path.join(root, "js", "data-service.js"), "utf8");
+  vm.runInContext(fs.readFileSync(path.join(root, "js", "telemetry-time.js"), "utf8"), context);
   vm.runInContext(dsSrc, context, { filename: "data-service.js" });
   // Top-level `const DataService = ...` lives in the context's lexical scope,
   // not on the context object — retrieve it with a follow-up script.

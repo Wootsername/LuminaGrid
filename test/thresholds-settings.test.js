@@ -47,6 +47,8 @@ assert(
   "A: firmware-fixed explanatory note present"
 );
 assert(modal.includes('id="cfgHeartbeat"'), "A: one editable Heartbeat Timeout field");
+assert(/id="cfgHeartbeat"\s+min="0\.25" max="60" step="any"/.test(modal),
+  "A: HTML permits fractional minutes down to 0.25");
 assert(modal.includes("Save Settings"), "A: button labeled 'Save Settings'");
 
 assert(!modal.includes("Set Operating Thresholds"), "B: old title removed");
@@ -142,6 +144,7 @@ const context = {
 };
 vm.createContext(context);
 const dsSrc = fs.readFileSync(path.join(root, "js", "data-service.js"), "utf8");
+vm.runInContext(fs.readFileSync(path.join(root, "js", "telemetry-time.js"), "utf8"), context);
 vm.runInContext(dsSrc, context, { filename: "data-service.js" });
 const DataService = vm.runInContext("DataService", context);
 
@@ -171,14 +174,29 @@ const DataService = vm.runInContext("DataService", context);
   assert(keys === "current_threshold_high,current_threshold_low,dawn_lux_threshold,dusk_lux_threshold,energy_rate_per_kwh,heartbeat_timeout_minutes,voltage_threshold_low",
     "11: exactly the original 7 schema fields (" + keys + ")");
 
+  // Fractional timeout round-trip preserves the schema and every unrelated field.
+  const fastMinutes = NodeRegistration.parseHeartbeatTimeout("0.25");
+  assert(fastMinutes === 0.25, "D: fast prototype parses as 0.25 minutes");
+  await DataService.updateSystemConfig({ ...after, heartbeat_timeout_minutes: fastMinutes });
+  const fastConfig = await DataService.getSystemConfig();
+  assert(fastConfig.heartbeat_timeout_minutes === 0.25, "D: 0.25 survives save/read without rounding");
+  assert(NodeRegistration.parseHeartbeatTimeout(fastConfig.heartbeat_timeout_minutes) === 0.25,
+    "D: reloaded 0.25 remains valid in the settings form");
+  assert(fastConfig.heartbeat_timeout_minutes * 60000 === 15000, "D: 0.25 converts exactly to 15000 ms");
+  assert(JSON.stringify({ ...fastConfig, heartbeat_timeout_minutes: 15 }) === JSON.stringify(after),
+    "D: fractional save preserves all other fields and schema");
+
   // E. invalid heartbeat values rejected by the shared form rule.
   assert(NodeRegistration.parseHeartbeatTimeout("0") === null, "E: 0 rejected");
   assert(NodeRegistration.parseHeartbeatTimeout("-5") === null, "E: negative rejected");
   assert(NodeRegistration.parseHeartbeatTimeout("abc") === null, "E: non-numeric rejected");
   assert(NodeRegistration.parseHeartbeatTimeout("61") === null, "E: > 60 rejected");
-  assert(NodeRegistration.parseHeartbeatTimeout("10.5") === null, "E: fractional rejected");
+  assert(NodeRegistration.parseHeartbeatTimeout("10.5") === 10.5, "E: fractional 10.5 accepted");
+  assert(NodeRegistration.parseHeartbeatTimeout("0.249") === null, "E: below 0.25 rejected");
+  assert(NodeRegistration.parseHeartbeatTimeout("Infinity") === null, "E: Infinity rejected");
+  assert(NodeRegistration.parseHeartbeatTimeout(NaN) === null, "E: NaN rejected");
   assert(NodeRegistration.parseHeartbeatTimeout("") === null, "E: empty rejected");
-  assert(NodeRegistration.parseHeartbeatTimeout("1") === 1, "E: minimum 1 accepted");
+  assert(NodeRegistration.parseHeartbeatTimeout("1") === 1, "E: legacy whole minute 1 accepted");
   assert(NodeRegistration.parseHeartbeatTimeout(" 60 ") === 60, "E: maximum 60 accepted (trimmed)");
 
   console.log("\nRESULT: " + pass + " passed, " + fails.length + " failed");

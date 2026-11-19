@@ -3,6 +3,25 @@
 // Loaded on every page after firebase-config.js / data-service.js.
 // ============================================================
 
+const HTML_ENTITIES = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" };
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, character => HTML_ENTITIES[character]);
+}
+
+function htmlStringArgument(value) {
+  // Quote for JavaScript, then escape for the surrounding HTML attribute.
+  return escapeHtml(JSON.stringify(String(value)));
+}
+
+function streetlightCoordinates({ latitude, longitude }) {
+  const coordinates = [latitude, longitude].map(value =>
+    typeof value === "string" && value.trim() ? Number(value) : value);
+  const [lat, lng] = coordinates;
+  return Number.isFinite(lat) && Math.abs(lat) <= 90 &&
+    Number.isFinite(lng) && Math.abs(lng) <= 180 ? coordinates : null;
+}
+
 function roleLabel(role) {
   switch (role) {
     case "admin": return "Barangay / LGU Administrator";

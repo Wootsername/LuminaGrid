@@ -61,7 +61,8 @@ function classifyHardwareState(reading) {
   const rawAmbient = reading.ambient_light;
   const rawVoltage = reading.voltage;
   const rawCurrent = reading.current;
-  if (rawAmbient == null || rawVoltage == null || rawCurrent == null) return null;
+  const numeric = (v) => (typeof v === "number" || (typeof v === "string" && v.trim() !== "")) && Number.isFinite(Number(v));
+  if (![rawAmbient, rawVoltage, rawCurrent].every(numeric)) return null;
   const ambient = Number(rawAmbient);
   const voltage = Number(rawVoltage);
   const current = Number(rawCurrent);
@@ -74,33 +75,31 @@ function classifyHardwareState(reading) {
   return "NORMAL";
 }
 
+const { CLOCK_SKEW_TOLERANCE_MS, parseTelemetryTimestamp, timestampAge } = require("../js/telemetry-time");
+
 // ---------- Freshness (section 4) ----------
 // CREATE or RESOLVE of Power/Bulb faults requires BOTH the latest reading
 // timestamp and the node's last_seen heartbeat to be valid and within the
 // 90 s window of nowMs. Stale -> false -> no automatic hardware action.
 function isHardwareTelemetryFresh(reading, node, nowMs) {
   const now = nowMs == null ? Date.now() : nowMs;
-  const readingMs = Date.parse((reading && reading.timestamp) || "");
-  const seenMs = Date.parse((node && node.last_seen) || "");
-  if (isNaN(readingMs) || isNaN(seenMs)) return false;
-  return (now - readingMs) <= HARDWARE_TELEMETRY_FRESH_MS &&
-         (now - seenMs) <= HARDWARE_TELEMETRY_FRESH_MS;
+  const readingAge = timestampAge(reading && reading.timestamp, now).effectiveAgeMs;
+  const seenAge = timestampAge(node && node.last_seen, now).effectiveAgeMs;
+  return Number.isFinite(readingAge) && Number.isFinite(seenAge) &&
+         readingAge <= HARDWARE_TELEMETRY_FRESH_MS &&
+         seenAge <= HARDWARE_TELEMETRY_FRESH_MS;
 }
-
-// ---------- Heartbeat (section 5) ----------
-// "NEVER_SEEN" (no valid last_seen), "TIMED_OUT" (past configured window),
-// or "OK". Missing heartbeat is NEVER Power/Bulb and NEVER creates a fault.
 
 // ---------- Heartbeat (section 5) ----------
 // "NEVER_SEEN" (no valid last_seen), "TIMED_OUT" (past configured window),
 // or "OK". Missing heartbeat is NEVER Power/Bulb and NEVER creates a fault.
 function heartbeatState(node, heartbeatTimeoutMin, nowMs) {
   const now = nowMs == null ? Date.now() : nowMs;
-  const seenMs = Date.parse((node && node.last_seen) || "");
-  if (isNaN(seenMs)) return "NEVER_SEEN";
+  const age = timestampAge(node && node.last_seen, now).effectiveAgeMs;
+  if (!Number.isFinite(age)) return "NEVER_SEEN";
   const timeoutMs =
-    (Number(heartbeatTimeoutMin) > 0 ? Number(heartbeatTimeoutMin) : DEFAULT_HEARTBEAT_TIMEOUT_MIN) * 60000;
-  return now - seenMs > timeoutMs ? "TIMED_OUT" : "OK";
+    (Number.isFinite(Number(heartbeatTimeoutMin)) && Number(heartbeatTimeoutMin) > 0 ? Number(heartbeatTimeoutMin) : DEFAULT_HEARTBEAT_TIMEOUT_MIN) * 60000;
+  return age > timeoutMs ? "TIMED_OUT" : "OK";
 }
 
 // ---------- Planning ----------
@@ -137,20 +136,14 @@ function planFaultActions({ node, reading, pending, heartbeatTimeoutMin, nowMs }
 }
 
 // ---------- Node status authority (section 16) ----------
-// Returns the desired stored status, or null when the backend has no
-// authority (legacy records with telemetry but no heartbeat history).
-function computeDesiredStatus({ node, pending, heartbeatTimeoutMin, nowMs, hasReading }) {
+// Returns the authoritative stored status; no valid heartbeat means Offline.
+function computeDesiredStatus({ node, pending, heartbeatTimeoutMin, nowMs }) {
   if (!node) return null;
   const now = nowMs == null ? Date.now() : nowMs;
   const hb = heartbeatState(node, heartbeatTimeoutMin, now);
   const pend = (pending || []).filter((f) => f && f.status === "Pending");
 
-  if (hb === "NEVER_SEEN") {
-    // Unprovisioned registered node (no device ever reported AND no
-    // telemetry) -> Offline. A legacy record that HAS readings but no
-    // last_seen keeps its stored status (no heartbeat data = no authority).
-    return hasReading ? null : "Offline";
-  }
+  if (hb === "NEVER_SEEN") return "Offline";
   if (hb === "TIMED_OUT") return "Offline";
   return pend.some((f) => f.fault_type !== NODE_OFFLINE_TYPE) ? "Faulty" : "Active";
 }
@@ -187,6 +180,9 @@ module.exports = {
   FAULT_SEVERITY,
   FAULT_DESCRIPTION,
   classifyHardwareState,
+  CLOCK_SKEW_TOLERANCE_MS,
+  parseTelemetryTimestamp,
+  timestampAge,
   isHardwareTelemetryFresh,
   heartbeatState,
   planFaultActions,

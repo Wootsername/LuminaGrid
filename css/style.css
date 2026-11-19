@@ -5995,12 +5995,15 @@ select:focus-visible {
   text-align: right;
 }
 
+/* Connection and Light Status must stay legible on the white detail body. */
+.node-detail #detailConnection .status-pill,
 .node-detail #detailLightStatus .status-pill {
   background: #F1F5F9;
   border-color: #E2E8F0;
   color: #242425;
 }
 
+.node-detail #detailConnection .status-pill::before,
 .node-detail #detailLightStatus .status-pill::before {
   display: none;
 }

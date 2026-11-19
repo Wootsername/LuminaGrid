@@ -4,13 +4,10 @@ Web-based monitoring dashboard for **LuminaGrid: An IoT-Based Smart Streetlight
 Monitoring and Fault Detection System via GSM Network for Local Government
 Units in Cebu City** (Capstone 2, University of Cebu – Main).
 
-Built dashboard-first since the ESP32/SIM800L hardware isn't ready yet. Every
-page reads and writes through `js/data-service.js`, whose *internals* now call
-Firebase Realtime Database (all eight data nodes) and Firebase Authentication
-(Email/Password). The legacy `data/mock-nodes.json` file was deleted in the
-final migration step — `upsertStreetlight()`, `tickHeartbeat()` and
-`markNodeActive()` now read and write Firebase like everything else, so no
-runtime code depends on it anymore.
+The static dashboard uses Firebase Authentication and Realtime Database through
+`js/data-service.js`. Trusted Node.js workers handle automatic faults and interval
+energy accounting. The dashboard shows worker-owned operational status alongside
+device heartbeat and sensor data.
 
 ## Folder structure
 
@@ -87,20 +84,37 @@ system_config                            energy_rate_per_kwh, thresholds, LDR du
 energy_monthly/{YYYY-MM}                 month, total_kwh, cost
 ```
 
-Seeded profile accounts (sign-in uses Firebase Authentication — Email/Password):
-`juan.delacruz@cebucity.gov.ph` (Admin), `mario.reyes@cebucity.gov.ph`
-(Electrician), `liza.santos@cebucity.gov.ph` (Finance).
+Sign in with a Firebase Authentication account and role assigned by the project owner.
 
 ## Running it locally
 
 Static site, no build step. From inside this folder:
 
 ```
-python3 -m http.server 8080
+python -m http.server 8080 --bind 127.0.0.1
 ```
 
 Then open `http://localhost:8080`. (Must be served over `http://`, not
-opened as `file://` — the Firebase SDK needs a real origin.)
+opened as `file://` — the Firebase SDK needs a real origin.) The checked-in web
+configuration points to the project database. Use team-approved test Firebase
+configuration and accounts when testing actions that write data. Keep Admin
+credentials outside the web root. For shared hosting, publish only the HTML,
+`js/`, `css/`, and `assets/` files.
+
+## Development checks
+
+Run from the repository root with Node.js and npm. The suites use local fixtures
+and Firebase doubles and run without Firebase credentials.
+
+```text
+npm ci --prefix backend
+npm test --prefix backend
+npm run test:browser --prefix backend
+```
+
+The browser smoke test uses local Chromium. Set `LUMINAGRID_TEST_BROWSER` to its
+executable path if needed. Review `git status` before committing and keep
+credentials, device captures, and local experiments out of shared branches.
 
 ## What's real vs. what's stubbed
 
@@ -110,9 +124,8 @@ markers and node popups, KPI counters, fault alerts, resolving faults,
 energy charts + CSV export, user account management, full fault history,
 and a merged system-log feed.
 
-**Node registration and the dashboard simulation buttons:** also against
-Firebase — `upsertStreetlight()`, `tickHeartbeat()` and `markNodeActive()`
-were migrated off the legacy mock file, which has been deleted.
+**Node registration:** writes the registered node and its coordinates to
+Firebase. The dashboard reads telemetry and automatic fault status from Firebase.
 
 **Known simplifications, flagged in code comments:**
 - `DataService.addUser()` creates the Firebase Auth credential through a
@@ -121,14 +134,13 @@ were migrated off the legacy mock file, which has been deleted.
   Cloud Functions.
 - `super-admin.html`'s passphrase gate is a placeholder, not real access
   control.
-- Energy kWh figures are a rough per-reading estimate
-  (`power_consumption / 1000`), not a real interval-based accumulation.
+- Energy totals come from the trusted worker interval aggregates. Offline
+  checks do not exercise the live worker deployment.
 
 ## Next steps
 
-1. Harden the Firebase Realtime Database security rules once migration
-   cleanup is complete (temporary read/write rules are in place for the
-   migration period).
+1. Verify the deployed Firebase Realtime Database rules against the team role
+   and write-access requirements before deployment.
 2. Replace the placeholder map center in `dashboard.js` with the real GPS
    coordinates of the four installed nodes.
 3. Decide whether `super-admin.html`'s other Use Case items (deploy

@@ -9,5 +9,27 @@ backend/serviceAccountKey.json
 .env
 .env.*
 
-# ---- logs / misc ----
+# ---- local outputs and editor/OS cache ----
 *.log
+Thumbs.db
+.DS_Store
+__pycache__/
+*.py[cod]
+.pytest_cache/
+coverage/
+
+# ---- local databases and private key material ----
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.pem
+*.key
+*.p12
+*.pfx
+
+# ---- retired one-off scripts kept only in existing local checkouts ----
+/backend/test/_debug.js
+/js/update-coords.js

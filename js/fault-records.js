@@ -35,15 +35,15 @@ async function renderFaultTable() {
 
     return `
       <tr>
-        <td><strong>${r.fault_id}</strong></td>
-        <td>${nodeLabel}</td>
-        <td>${r.fault_type}</td>
-        <td><span class="severity-badge severity-${r.severity.toLowerCase()}">${r.severity}</span></td>
-        <td><span class="status-pill ${r.status === 'Resolved' ? 'resolved' : 'pending'}">${r.status}</span></td>
+        <td><strong>${escapeHtml(r.fault_id)}</strong></td>
+        <td>${escapeHtml(nodeLabel)}</td>
+        <td>${escapeHtml(r.fault_type)}</td>
+        <td><span class="severity-badge severity-${escapeHtml(String(r.severity ?? "").toLowerCase())}">${escapeHtml(r.severity || "—")}</span></td>
+        <td><span class="status-pill ${r.status === 'Resolved' ? 'resolved' : 'pending'}">${escapeHtml(r.status)}</span></td>
         <td>${formatDateTime(r.detected_at)}</td>
         <td>${formatDateTime(r.resolved_at)}</td>
         <td>
-          ${r.status === 'Pending' ? `<button class="history-resolve-btn" onclick="resolveFaultRecord('${r.fault_id}')">Resolve</button>` : '—'}
+          ${r.status === 'Pending' ? (DataService.isAutomaticFaultType(r.fault_type) ? 'Automatic fault — resolves when telemetry confirms recovery.' : `<button class="history-resolve-btn" onclick="resolveFaultRecord(${htmlStringArgument(r.fault_id)})">Resolve</button>`) : '—'}
         </td>
       </tr>
     `;

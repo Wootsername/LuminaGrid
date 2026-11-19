@@ -132,17 +132,16 @@
   }
 
   // Parse/validate the ONE editable Prototype Operating Settings field:
-  // Heartbeat Timeout (minutes). Valid = whole number 1..60 (inclusive).
-  // Returns the parsed integer, or null when the input is missing /
-  // non-numeric / fractional / out of range. DOM-free so the settings
+  // Heartbeat Timeout (minutes). Valid = 0.25..60 (inclusive); 0.25 = 15s.
+  // Returns the parsed number, or null when the input is missing /
+  // non-numeric / out of range. DOM-free so the settings
   // harness can exercise the exact rule the form uses.
   function parseHeartbeatTimeout(raw) {
     const s = String(raw == null ? "" : raw).trim();
     if (s === "") return null;
     const n = Number(s);
     if (!Number.isFinite(n)) return null;
-    if (!Number.isInteger(n)) return null;
-    if (n < 1 || n > 60) return null;
+    if (n < 0.25 || n > 60) return null;
     return n;
   }
 

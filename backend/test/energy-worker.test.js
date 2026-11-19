@@ -11,6 +11,9 @@
 // ============================================================
 const path = require("path");
 const Module = require("module");
+const fs = require("node:fs");
+const vm = require("node:vm");
+const energyService = require("../energy-service");
 
 function makeDb() {
   const store = {};
@@ -95,6 +98,49 @@ const readStore = (db, p) => {
 function mkInterval(sid, prevTs, curTs, dayKey, monthKey, kwh) {
   return { prevTs, curTs, kwh, segments: [{ dayKey, monthKey, kwh }] };
 }
+
+// Reload the actual worker in an isolated JS context for restart/CLI tests.
+// Firebase initialization is always intercepted: no credentials or network.
+function isolatedWorker(db, options = {}) {
+  const logs = [], errors = [];
+  let closed = 0;
+  const context = vm.createContext({
+    require(name) {
+      if (name === "./firebase-admin") return {
+        db, admin: { app: () => ({ async delete() { closed++; } }) }
+      };
+      if (name === "./energy-service") return energyService;
+      if (name === "./energy-diagnostics") return require("../energy-diagnostics");
+      throw new Error("Unexpected worker import: " + name);
+    },
+    module: { exports: {} },
+    process: { env: { ENERGY_POLL_INTERVAL_MS: "15" },
+      argv: options.watch ? ["--watch"] : [], exitCode: 0 },
+    Date: options.nowMs == null ? Date : class extends Date {
+      static now() { return options.nowMs; }
+    },
+    console: { log: (...v) => logs.push(v.join(" ")), error: (...v) => errors.push(v.join(" ")) },
+    setTimeout: options.setTimeout || (() => { throw new Error("Unexpected timer"); }),
+    setInterval: () => { throw new Error("Watch must not use an overlapping interval"); },
+    testPass: options.pass
+  });
+  vm.runInContext(fs.readFileSync(workerPath, "utf8"), context);
+  return { worker: context.module.exports, context, logs, errors,
+    closed: () => closed,
+    main: () => vm.runInContext("runOnce = testPass; main()", context) };
+}
+
+function midnightInterval(day) {
+  const prevTs = Date.parse(day + "T15:59:55Z");
+  const curTs = prevTs + 10000;
+  const plan = energyService.planIntervals({
+    last_reading_id: "before", last_timestamp: new Date(prevTs).toISOString(), last_power_w: 36
+  }, [{ key: "after", timestamp: new Date(curTs).toISOString(), power_consumption: 36 }], curTs);
+  if (plan.intervals.length !== 1) throw new Error("Midnight fixture must plan one interval");
+  return plan.intervals[0];
+}
+
+const flush = () => new Promise(resolve => setImmediate(resolve));
 
 const RATE = 13.6;
 const NOW = new Date().toISOString();
@@ -306,6 +352,204 @@ const dayPath = (m, d) => `energy_monthly/${m}/today/${d}`;
     const res = await commitInterval("1", iv, RATE, NOW); // replay
     assert(res.claimed === false && res.alreadyApplied === true, "applied claim short-circuits");
     assert(near(readStore(db, dayPath(MK, DK)), before), "no change on applied replay");
+  }
+
+  console.log("== real planner: both midnight boundaries, including replay ==");
+  for (const day of ["2026-10-14", "2026-10-31"]) {
+    const db = makeDb();
+    const worker = isolatedWorker(db).worker;
+    const iv = midnightInterval(day);
+    const result = await worker.commitInterval("1", iv, RATE, NOW);
+    assert(iv.segments.length === 2, day + ": planner splits two days");
+    for (const seg of iv.segments) {
+      assert(near(readStore(db, dayPath(seg.monthKey, seg.dayKey)), 0.000050),
+        day + ": day " + seg.dayKey + " counted");
+    }
+    const total = Object.values(db._store.energy_monthly).reduce((sum, rec) => sum + rec.total_kwh, 0);
+    assert(near(total, 0.000100), day + ": complete interval in monthly totals");
+    assert(near(result.appliedKwh, iv.kwh), day + ": reports complete committed increment");
+    const before = JSON.stringify(db._store.energy_monthly);
+    await worker.commitInterval("1", iv, RATE, "2026-12-01T00:00:00Z");
+    assert(JSON.stringify(db._store.energy_monthly) === before, day + ": replay leaves aggregates unchanged");
+  }
+
+  console.log("== restart after partial processing across months / before finalize ==");
+  for (const day of ["2026-10-14", "2026-10-31"]) {
+    const db = makeDb(), iv = midnightInterval(day);
+    const key = energyService.intervalKey("1", iv.prevTs, iv.curTs);
+    const claimPath = "backend_state/energy/processed/1/" + key;
+    const acrossMonths = iv.segments[0].monthKey !== iv.segments[1].monthKey;
+    const interrupted = new Error("simulated crash");
+    let injected = false;
+    const crashingDb = { ref(p) {
+      const ref = db.ref(p);
+      return { ...ref, transaction(update) {
+        return ref.transaction(cur => {
+          const next = update(cur);
+          const failHere = acrossMonths
+            ? p === "energy_monthly/" + iv.segments[1].monthKey
+            : p === claimPath && next?.status === "applied";
+          if (!injected && failHere && next !== undefined) {
+            injected = true;
+            throw interrupted;
+          }
+          return next;
+        });
+      } };
+    } };
+    let caught;
+    try { await isolatedWorker(crashingDb).worker.commitInterval("1", iv, RATE, NOW); }
+    catch (error) { caught = error; }
+    assert(caught === interrupted, day + ": injected crash reached");
+    assert(db._store.backend_state.energy.processed["1"][key].status === "pending",
+      day + ": durable claim remains pending");
+    assert(near(readStore(db, dayPath(iv.segments[0].monthKey, iv.segments[0].dayKey)), 0.000050),
+      day + ": first day committed before restart");
+    assert(near(readStore(db, dayPath(iv.segments[1].monthKey, iv.segments[1].dayKey)), acrossMonths ? 0 : 0.000050),
+      day + ": month transaction is atomic");
+    // Re-derived input must not replace the already persisted pending payload.
+    const changedInput = { ...iv, segments: iv.segments.map(seg => ({ ...seg, kwh: seg.kwh * 4 })) };
+    const resumed = await isolatedWorker(db).worker.commitInterval("1", changedInput, RATE, NOW);
+    assert(near(resumed.appliedKwh, acrossMonths ? 0.000050 : 0),
+      day + ": restart only adds missing month from durable payload");
+    for (const seg of iv.segments) {
+      assert(near(readStore(db, dayPath(seg.monthKey, seg.dayKey)), 0.000050),
+        day + ": resumed day counted exactly once");
+    }
+    assert(db._store.backend_state.energy.processed["1"][key].status === "applied",
+      day + ": recovered claim finalized");
+    const before = JSON.stringify(db._store.energy_monthly);
+    await isolatedWorker(db).worker.commitInterval("1", iv, RATE, NOW);
+    assert(JSON.stringify(db._store.energy_monthly) === before, day + ": restart replay is a no-op");
+  }
+
+  console.log("== simultaneous same-month midnight interval is counted once ==");
+  {
+    const db = makeDb(), iv = midnightInterval("2026-10-14");
+    await Promise.all([
+      isolatedWorker(db).worker.commitInterval("1", iv, RATE, NOW),
+      isolatedWorker(db).worker.commitInterval("1", iv, RATE, NOW)
+    ]);
+    assert(near(db._store.energy_monthly["2026-10"].total_kwh, 0.000100),
+      "racing workers preserve the complete interval exactly once");
+    for (const seg of iv.segments) {
+      assert(near(readStore(db, dayPath(seg.monthKey, seg.dayKey)), 0.000050),
+        "racing workers preserve day " + seg.dayKey);
+    }
+  }
+
+  console.log("== legacy month marker never automatically repairs old totals ==");
+  {
+    const db = makeDb(), iv = midnightInterval("2026-10-14");
+    const key = energyService.intervalKey("1", iv.prevTs, iv.curTs);
+    db._store.energy_monthly = { "2026-10": {
+      total_kwh: 0.000050, cost: 0.000680,
+      nodes: { "1": { total_kwh: 0.000050, cost: 0.000680 } },
+      today: { "2026-10-14": 0.000050 }, _applied: { [key]: true }
+    } };
+    db._store.backend_state = { energy: { processed: { "1": {
+      [key]: { status: "pending", sid: "1", key, segments: iv.segments }
+    } } } };
+    const before = JSON.stringify(db._store.energy_monthly);
+    const result = await isolatedWorker(db).worker.commitInterval("1", iv, RATE, NOW);
+    assert(result.appliedKwh === 0, "legacy marker contributes no new historical energy");
+    assert(JSON.stringify(db._store.energy_monthly) === before, "legacy totals and daily buckets remain byte-equivalent");
+  }
+
+  console.log("== two complete processing passes cannot recount a midnight interval ==");
+  {
+    const db = makeDb(), iv = midnightInterval("2026-10-14");
+    db._store.streetlight = { "1": { streetlight_id: 1 } };
+    db._store.system_config = { energy_rate_per_kwh: RATE };
+    db._store.backend_state = { energy: { "1": {
+      last_reading_id: "before", last_timestamp: new Date(iv.prevTs).toISOString(), last_power_w: 36
+    } } };
+    db._store.sensor_reading = { "1": {
+      before: { timestamp: new Date(iv.prevTs).toISOString(), power_consumption: 36 },
+      after: { timestamp: new Date(iv.curTs).toISOString(), power_consumption: 36 }
+    } };
+    const worker = isolatedWorker(db, { nowMs: iv.curTs }).worker;
+    const first = await worker.runOnce();
+    const before = JSON.stringify(db._store.energy_monthly);
+    const second = await worker.runOnce();
+    assert(first[0].intervals === 1 && second[0].intervals === 0,
+      "first pass applies interval, second pass has no new interval");
+    assert(near(db._store.energy_monthly["2026-10"].total_kwh, 0.000100), "full pass counts both midnight days");
+    assert(JSON.stringify(db._store.energy_monthly) === before, "second pass leaves energy unchanged");
+    assert(db._store.backend_state.energy["1"].last_timestamp === new Date(iv.curTs).toISOString(),
+      "cursor advances only after the complete interval");
+  }
+
+  console.log("== watch awaits a slow pass and recovers after later failure ==");
+  {
+    let now = 0, calls = 0, active = 0, peak = 0, release;
+    const timers = [], stop = new Error("end simulated watch");
+    const slowPass = new Promise(resolve => { release = resolve; });
+    const host = isolatedWorker(makeDb(), {
+      watch: true,
+      async pass() {
+        calls++; active++; peak = Math.max(peak, active);
+        try {
+          if (calls === 1) await slowPass;
+          if (calls === 2) throw new Error("recoverable read failure");
+          return [];
+        } finally { active--; }
+      },
+      setTimeout(fn, ms) {
+        if (calls === 3) throw stop;
+        timers.push({ fn, due: now + ms });
+      }
+    });
+    const done = host.main().then(() => null, error => error);
+    await flush();
+    now += 75; // five configured intervals elapse while the first pass is pending
+    for (const timer of timers.splice(0)) if (timer.due <= now) timer.fn();
+    await flush();
+    assert(calls === 1 && active === 1 && timers.length === 0, "slow pass creates no overlapping pass or pending watch timer");
+    release();
+    await flush();
+    assert(timers.length === 1 && timers[0].due === now + 15, "delay starts after slow pass completes");
+    now += 15; timers.shift().fn(); await flush();
+    assert(calls === 2 && host.errors.some(text => text.includes("recoverable read failure")),
+      "later failure is logged");
+    now += 15; timers.shift().fn(); await flush();
+    assert(await done === stop, "simulated watch stops only at the test boundary");
+    assert(calls === 3 && peak === 1, "next pass runs after failure with maximum concurrency one");
+    assert(host.closed() === 1, "worker releases SDK connection on loop exit");
+  }
+
+  console.log("== watch survives its first processing-pass failure ==");
+  {
+    let calls = 0;
+    const timers = [], stop = new Error("end startup recovery test");
+    const host = isolatedWorker(makeDb(), {
+      watch: true,
+      async pass() { if (++calls === 1) throw new Error("startup read failure"); return []; },
+      setTimeout(fn) { if (calls === 2) throw stop; timers.push(fn); }
+    });
+    const done = host.main().then(() => null, error => error);
+    await flush();
+    assert(calls === 1 && timers.length === 1 && host.errors.some(text => text.includes("startup read failure")),
+      "initial failure is logged and schedules a retry");
+    timers.shift()(); await flush();
+    assert(await done === stop && calls === 2, "first-pass failure does not silently stop watch mode");
+  }
+
+  console.log("== one-pass mode runs once, reports failures and releases connection ==");
+  for (const scenario of ["success", "node-error", "pass-error"]) {
+    let calls = 0;
+    const failure = new Error("one-pass failure");
+    const host = isolatedWorker(makeDb(), { async pass() {
+      calls++;
+      if (scenario === "pass-error") throw failure;
+      return scenario === "node-error" ? [{ sid: "1", error: "node read failure" }] : [];
+    } });
+    let caught;
+    try { await host.main(); } catch (error) { caught = error; }
+    assert(calls === 1 && host.closed() === 1, scenario + ": one pass and SDK cleanup");
+    assert(scenario === "pass-error" ? caught === failure : !caught, scenario + ": pass-level outcome preserved");
+    assert(host.context.process.exitCode === (scenario === "node-error" ? 1 : 0),
+      scenario + ": per-node failure sets unsuccessful exit status");
   }
 
   console.log("\nRESULT: " + pass + " passed, " + fails.length + " failed");

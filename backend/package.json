@@ -1,7 +1,7 @@
 {
   "name": "luminagrid-backend",
   "version": "1.0.0",
-  "description": "LuminaGrid trusted backend worker — Energy Engine (fault engine to be added later).",
+  "description": "LuminaGrid trusted Energy and automatic fault workers.",
   "main": "energy-worker.js",
   "type": "commonjs",
   "license": "ISC",
@@ -10,7 +10,8 @@
     "energy:watch": "node energy-worker.js --watch",
     "fault": "node fault-worker.js",
     "fault:watch": "node fault-worker.js --watch",
-    "test": "node test/energy-service.test.js && node test/fault-service.test.js && node test/fault-worker.test.js"
+    "test": "node test/energy-service.test.js && node test/energy-worker.test.js && node --test test/energy-timestamps.test.js && node test/fault-service.test.js && node --test test/fault-worker.test.js ../test/fault-ui.test.js && node ../test/node-registration.test.js && node ../test/thresholds-settings.test.js && node --test ../test/dashboard-telemetry.test.js",
+    "test:browser": "node --test ../test/dashboard-connection-browser.test.js"
   },
   "dependencies": {
     "firebase-admin": "^12.7.0"

@@ -19,10 +19,8 @@ gateNavByRole(currentRole);
 const TELEMETRY_FRESH_MS = 60000;
 
 function isFresh(reading) {
-  if (!reading || !reading.timestamp) return false;
-  const ms = Date.parse(reading.timestamp);
-  if (isNaN(ms)) return false;
-  return Date.now() - ms <= TELEMETRY_FRESH_MS;
+  const age = DataService.timestampAge(reading && reading.timestamp).effectiveAgeMs;
+  return Number.isFinite(age) && age <= TELEMETRY_FRESH_MS;
 }
 
 // A lamp is electrically ON only with fresh telemetry whose light_status is ON.
@@ -154,8 +152,8 @@ async function loadEnergyData() {
       return `
         <div class="node-bar-row">
           <div class="node-bar-label">
-            <div class="node-id">${n.id}</div>
-            <div class="node-pole">${n.pole}</div>
+            <div class="node-id">${escapeHtml(n.id)}</div>
+            <div class="node-pole">${escapeHtml(n.pole)}</div>
           </div>
           <div class="node-bar-track">
             <div class="node-bar-fill ${gradClass}" style="width:${pct}%;"></div>
@@ -171,9 +169,9 @@ async function loadEnergyData() {
   if (breakdownBody) {
     breakdownBody.innerHTML = nodeBreakdowns.map((n) => `
       <tr>
-        <td><strong>${n.id}</strong></td>
-        <td>${n.location}</td>
-        <td><span class="status-pill ${n.statusClass}">${n.status}</span></td>
+        <td><strong>${escapeHtml(n.id)}</strong></td>
+        <td>${escapeHtml(n.location)}</td>
+        <td><span class="status-pill ${n.statusClass}">${escapeHtml(n.status)}</span></td>
         <td style="font-family:var(--font-mono);">${n.hasTelemetry ? fmt(n.powerKw, 3) : "—"}</td>
         <td style="font-family:var(--font-mono); font-weight:600;">${fmt(n.energyKwh, 3)}</td>
         <td style="font-family:var(--font-mono); font-weight:600; color:var(--green);">₱ ${fmt(n.cost, 2)}</td>

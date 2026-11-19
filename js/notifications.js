@@ -60,15 +60,15 @@ function renderRows(rows) {
   }
 
   tbody.innerHTML = rows.map(({ notification: n, node, resolved }) => `
-    <tr id="notif-${n.notification_id}">
+    <tr id="notif-${escapeHtml(n.notification_id)}">
       <td class="notif-status-icon" data-label="">${resolved ? '<span class="icon-ok" aria-label="Resolved"></span>' : '<span class="icon-warn" aria-label="Unresolved"></span>'}</td>
       <td data-label="Date">${formatNotifDate(n.sent_at)}</td>
-      <td data-label="Node ID">${node ? nodeIdOf(node) : '—'}</td>
-      <td data-label="Pole ID">${node ? (node.pole_number || '—') : '—'}</td>
-      <td class="notif-addr-cell" data-label="Address">${node ? nodeAddressOf(node) : (n.message || '—')}</td>
+      <td data-label="Node ID">${escapeHtml(node ? nodeIdOf(node) : '—')}</td>
+      <td data-label="Pole ID">${escapeHtml(node ? (node.pole_number || '—') : '—')}</td>
+      <td class="notif-addr-cell" data-label="Address">${escapeHtml(node ? nodeAddressOf(node) : (n.message || '—'))}</td>
       <td data-label="Action">
         <div class="notif-action-cell">
-          <button class="notif-view-btn" onclick="viewNotification('${n.notification_id}')">View</button>
+          <button class="notif-view-btn" onclick="viewNotification(${htmlStringArgument(n.notification_id)})">View</button>
           <span class="notif-status-btn ${resolved ? 'resolved' : 'unresolved'}">${resolved ? 'Resolved' : 'Unresolved'}</span>
         </div>
       </td>
@@ -136,11 +136,11 @@ async function viewNotification(notificationId) {
         : (n.message || 'Fault alert reported via GSM network.'));
 
   document.getElementById("notifModalBody").innerHTML = `
-    <p><strong>Node:</strong> ${node ? nodeLabelOf(node) : '—'}</p>
-    <p><strong>Address:</strong> ${nodeAddressOf(node)}</p>
-    <p><strong>Message:</strong> ${liveMessage}</p>
+    <p><strong>Node:</strong> ${escapeHtml(node ? nodeLabelOf(node) : '—')}</p>
+    <p><strong>Address:</strong> ${escapeHtml(nodeAddressOf(node))}</p>
+    <p><strong>Message:</strong> ${escapeHtml(liveMessage)}</p>
     <p><strong>Sent:</strong> ${formatDateTime(n.sent_at)}</p>
-    ${fault ? `<p><strong>Fault status:</strong> ${fault.status}</p>` : ''}
+    ${fault ? `<p><strong>Fault status:</strong> ${escapeHtml(fault.status)}</p>` : ''}
   `;
 
   const markReadBtn = document.getElementById("notifMarkReadBtn");

@@ -16,14 +16,14 @@ async function renderUsers() {
     .map(
       (u) => `
       <tr>
-        <td><strong>${u.user_id}</strong></td>
-        <td>${u.first_name} ${u.last_name}</td>
-        <td>${u.email}</td>
+        <td><strong>${escapeHtml(u.user_id)}</strong></td>
+        <td>${escapeHtml(u.first_name)} ${escapeHtml(u.last_name)}</td>
+        <td>${escapeHtml(u.email)}</td>
         <td><span class="role-badge" style="background:var(--gray-200); color:var(--navy-900);">${roleLabel(u.role)}</span></td>
-        <td>${u.contact_number || "—"}</td>
-        <td><span class="status-pill ${u.status === 'Deactivated' ? 'offline' : 'ok'}">${u.status || 'Active'}</span></td>
+        <td>${escapeHtml(u.contact_number || "—")}</td>
+        <td><span class="status-pill ${u.status === 'Deactivated' ? 'offline' : 'ok'}">${escapeHtml(u.status || 'Active')}</span></td>
         <td>
-          ${u.role === "admin" ? "" : `<button class="link-btn danger" onclick="deactivate('${u.user_id}')">Deactivate</button>`}
+          ${u.role === "admin" ? "" : `<button class="link-btn danger" onclick="deactivate(${htmlStringArgument(u.user_id)})">Deactivate</button>`}
         </td>
       </tr>`
     )

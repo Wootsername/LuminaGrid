@@ -10,6 +10,7 @@
 // this: if a node disconnects we resume accumulation from the next fresh
 // reading instead of assuming the last power continued indefinitely.
 const MAX_ENERGY_GAP_MS = 60000;
+const { inspectEnergyInputs } = require("./energy-diagnostics");
 
 // Philippines is UTC+8 with no DST, so a fixed offset is exact year-round and
 // lets us find local day boundaries deterministically.
@@ -108,26 +109,21 @@ function mkState(r) {
 //
 // NORMAL RESTART (state present): ignore readings with ts <= last_timestamp
 // and integrate only genuinely newer intervals.
-function planIntervals(state, readings) {
-  const valid = (readings || [])
-    .filter(
-      (r) =>
-        r &&
-        typeof r.power_consumption === "number" &&
-        r.timestamp &&
-        !Number.isNaN(Date.parse(r.timestamp))
-    )
-    .map((r) => ({ ...r, ts: Date.parse(r.timestamp) }))
-    .sort((a, b) => a.ts - b.ts);
-
+function planIntervals(state, readings, nowMs = Date.now()) {
+  const { valid, stateUsable, stateTime } = inspectEnergyInputs(state, readings, nowMs, MAX_ENERGY_GAP_MS);
   if (valid.length === 0) return { bootstrap: false, intervals: [], newState: state };
 
-  if (!state) {
+  // Missing, legacy, malformed, or implausibly future cursors have no usable
+  // integration baseline. Recover at the newest valid sample with ZERO
+  // historical energy; never bridge the unknown period or delete claims.
+  if (!stateUsable) {
     return { bootstrap: true, intervals: [], newState: mkState(valid[valid.length - 1]) };
   }
 
+  // Plausibility uses worker time, but elapsed energy uses unmodified DEVICE
+  // timestamps. A +7s skew must not shorten a real 10s integration interval.
   let prev = {
-    ts: Date.parse(state.last_timestamp),
+    ts: stateTime.parsedMs,
     power: state.last_power_w,
     key: state.last_reading_id
   };
@@ -137,11 +133,12 @@ function planIntervals(state, readings) {
     if (r.ts <= prev.ts) continue; // older / duplicate / replay
     if (typeof prev.power === "number" && r.ts - prev.ts <= MAX_ENERGY_GAP_MS) {
       const kwh = integrateIntervalKwh(prev.power, r.power_consumption, r.ts - prev.ts);
-      if (kwh > 0) {
+      if (kwh >= 0) { // a valid zero-watt interval is still processed once
         intervals.push({
           key: intervalKey(undefined, prev.ts, r.ts), // sid filled by worker
           prevTs: prev.ts,
           curTs: r.ts,
+          readingId: r.key, // diagnostic only; never used for ordering/identity
           kwh,
           segments: splitByDay(prev.ts, r.ts, kwh)
         });

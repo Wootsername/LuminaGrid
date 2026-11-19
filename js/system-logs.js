@@ -81,7 +81,7 @@ async function renderLogs() {
     <tr>
       <td style="font-family:var(--font-mono); font-size:0.8rem; color:var(--gray-500);">${formatDateTime(l.time)}</td>
       <td><span class="role-badge" style="background:var(--gray-200); color:var(--navy-900);">${l.type}</span></td>
-      <td>${l.detail}</td>
+      <td>${escapeHtml(l.detail)}</td>
     </tr>
   `).join("");
 }
